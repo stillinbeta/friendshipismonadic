@@ -9,7 +9,7 @@ author:              Liz Frost
 maintainer:          web@stillinbeta.com
 copyright:           BSD3
 category:            Demo
-build-type:          Simple
+build-type:          Simpl
 cabal-version:       >=1.10
 extra-source-files:  README.md
 
@@ -17,4 +17,18 @@ executable friendshipismonadic
   hs-source-dirs:      src
   main-is:             Main.hs
   default-language:    Haskell2010
-  build-depends:       base >= 4.7 && < 5
+  build-depends:       base >= 4.7 && < 5,
+                       text == 1.2.*,
+                       transformers == 0.5.*
+
+test-suite fim-test
+           type: exitcode-stdio-1.0
+           main-is: Test.hs
+           other-modules: Fim
+           hs-source-dirs:      test
+                                src
+           build-depends:       base >= 4.7 && < 5,
+                                hspec == 2.*,
+                                neat-interpolation == 0.3.*,
+                                text == 1.2.*,
+                                transformers == 0.5.*
