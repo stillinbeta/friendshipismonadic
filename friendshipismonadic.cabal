@@ -1,0 +1,20 @@
+name:                friendshipismonadic
+version:             0.1.0.0
+-- synopsis:
+-- description:
+homepage:            https://github.com/stillinbeta/friendshipismonadic#readme
+license:             BSD3
+license-file:        LICENSE
+author:              Liz Frost
+maintainer:          web@stillinbeta.com
+copyright:           BSD3
+category:            Demo
+build-type:          Simple
+cabal-version:       >=1.10
+extra-source-files:  README.md
+
+executable friendshipismonadic
+  hs-source-dirs:      src
+  main-is:             Main.hs
+  default-language:    Haskell2010
+  build-depends:       base >= 4.7 && < 5
