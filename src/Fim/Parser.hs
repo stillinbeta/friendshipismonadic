@@ -2,6 +2,9 @@ module Fim.Parser (fimClass) where
 
 import qualified Fim.Types as Types
 
+import Fim.Parser.Tokens (identifier)
+import qualified Fim.Parser.Methods as Methods
+
 import Control.Applicative (many)
 import Control.Monad (void)
 import Data.Maybe (isJust, catMaybes)
@@ -40,50 +43,7 @@ fimClassSignoff = do
   _ <- identifier
   void newline
 
-identifier :: Parser String
-identifier = manyTill anyChar punctuation
-
 classBody :: Parser [Types.Function]
 classBody = do
-  funcs <- manyTill (method <|> emptyLine) (try fimClassSignoff)
+  funcs <- manyTill (Methods.emptyLine <|> Methods.method) (try fimClassSignoff)
   return $ catMaybes funcs
-
-emptyLine :: Parser (Maybe Types.Function)
-emptyLine = many1 space >> return Nothing
-
-
-method :: Parser (Maybe Types.Function)
-method = do
-  isMain <- isJust <$> optionMaybe (string "Today ")
-  void $ string "I learned "
-  name <- identifier
-  void $ newline
-  stmts <- manyTill statements (try $ methodEnd name)
-  return $ Just (Types.Function name isMain stmts)
-
-methodEnd :: String -> Parser ()
-methodEnd name = (string "That's all about " >> string name >> punctuation) <?> "method end"
-
-punctuation :: Parser ()
-punctuation = void $ oneOf ",.!?"
-
-statements :: Parser Types.Statement
-statements = choice [iSaid] <?> "statement"
-
-iSaid :: Parser Types.Statement
-iSaid = do
-  void $ string "I said" >> space
-  val <- value
-  punctuation
-  void $ newline
-  return $ Types.SISaid val
-
-value :: Parser Types.Value
-value = Types.VLiteral <$> literal
-
-literal :: Parser Types.Literal
-literal = do
-  void $ oneOf "\"“"
-  str <- many $ noneOf "\"”"
-  void $ oneOf "\"”"
-  return $ Types.StringLiteral str
