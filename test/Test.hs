@@ -3,7 +3,7 @@
 module Main where
 
 import qualified Fim
-import qualified Fim.Types as Types
+import Fim.Types
 
 import Data.Text (unpack)
 import Control.Monad.Trans.Writer.Lazy (execWriter)
@@ -16,7 +16,7 @@ main = hspec $ do
     it "should lex a simple, empty class" $ do
       let program = [text|Dear Princess Celestia: Hello World!
                           Your faithful student, Twilight Sparkle.|]
-      Fim.parse (unpack program) `shouldBe` Right [Types.Class "Hello World" Types.Celestia []]
+      Fim.parse (unpack program) `shouldBe` Right [Class "Hello World" Celestia []]
     it "should lex a class with one empty function" $ do
       let program = [text|Dear Princess Celestia: Hello World!
 
@@ -24,11 +24,28 @@ main = hspec $ do
                           That's all about something simple!
 
                           Your faithful student, Twilight Sparkle.|]
-      Fim.parse (unpack program) `shouldBe` Right [Types.Class
+      Fim.parse (unpack program) `shouldBe` Right [Class
                                                    "Hello World"
-                                                   Types.Celestia
-                                                  [Types.Function "something simple"]]
+                                                   Celestia
+                                                  [Function "something simple" True []]]
+    it "should lex a simple hello world" $ do
+      let program = [text|Dear Princess Celestia: Hello World!
 
+                          Today I learned something simple.
+                          I said “Hello, World!”!
+                          That's all about something simple!
+
+                          Your faithful student, Twilight Sparkle.
+                         |]
+      Fim.parse (unpack program) `shouldBe` Right [Class
+                                                  "Hello World"
+                                                  Celestia
+                                                  [
+                                                    Function "something simple" True [
+                                                      SISaid (VLiteral (StringLiteral "Hello, World!"))
+                                                      ]
+                                                  ]
+                                                  ]
   describe "fim interpreter" $
     it "should run hello world" $ do
       let program = [text|Dear Princess Celestia: Hello World!

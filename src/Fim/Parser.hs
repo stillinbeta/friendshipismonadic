@@ -4,11 +4,11 @@ import qualified Fim.Types as Types
 
 import Control.Applicative (many)
 import Control.Monad (void)
-import Data.Maybe (catMaybes)
-import Text.Parsec (try, (<|>))
+import Data.Maybe (isJust, catMaybes)
+import Text.Parsec (try, (<|>), (<?>))
 import Text.Parsec.String (Parser)
-import Text.Parsec.Char (anyChar, space, string, newline, noneOf, oneOf)
-import Text.Parsec.Combinator (choice, manyTill, many1)
+import Text.Parsec.Char (anyChar, space, string, newline, noneOf, oneOf, char)
+import Text.Parsec.Combinator (choice, manyTill, many1, optionMaybe)
 
 fimClass :: Parser Types.Class
 fimClass = do
@@ -54,11 +54,36 @@ emptyLine = many1 space >> return Nothing
 
 method :: Parser (Maybe Types.Function)
 method = do
-  void $ string "Today I learned "
+  isMain <- isJust <$> optionMaybe (string "Today ")
+  void $ string "I learned "
   name <- identifier
-  void newline
-  void $ string "That's all about " >> string name >> punctuation
-  return $ Just (Types.Function name)
+  void $ newline
+  stmts <- manyTill statements (try $ methodEnd name)
+  return $ Just (Types.Function name isMain stmts)
+
+methodEnd :: String -> Parser ()
+methodEnd name = (string "That's all about " >> string name >> punctuation) <?> "method end"
 
 punctuation :: Parser ()
 punctuation = void $ oneOf ",.!?"
+
+statements :: Parser Types.Statement
+statements = choice [iSaid] <?> "statement"
+
+iSaid :: Parser Types.Statement
+iSaid = do
+  void $ string "I said" >> space
+  val <- value
+  punctuation
+  void $ newline
+  return $ Types.SISaid val
+
+value :: Parser Types.Value
+value = Types.VLiteral <$> literal
+
+literal :: Parser Types.Literal
+literal = do
+  void $ oneOf "\"“"
+  str <- many $ noneOf "\"”"
+  void $ oneOf "\"”"
+  return $ Types.StringLiteral str
