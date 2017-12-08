@@ -1,9 +1,9 @@
-{-# LANGUAGE QuasiQuotes #-}
+{-# LANGUAGE QuasiQuotes, OverloadedStrings #-}
 
 module Main where
 
-import qualified Fim
-import Fim.Types
+import qualified Language.Fim as Fim
+import Language.Fim.Types
 
 import Data.Text (unpack)
 import Control.Monad.Trans.Writer.Lazy (execWriter)
@@ -16,7 +16,11 @@ main = hspec $ do
     it "should lex a simple, empty class" $ do
       let program = [text|Dear Princess Celestia: Hello World!
                           Your faithful student, Twilight Sparkle.|]
-      Fim.parse (unpack program) `shouldBe` Right [Class "Hello World" Celestia []]
+
+      let expected = Class (Identifier "Hello World" Exclamation)
+                           Celestia []
+                           (Identifier "Twilight Sparkle" FullStop)
+      Fim.parse program `shouldBe` Right [expected]
     it "should lex a class with one empty function" $ do
       let program = [text|Dear Princess Celestia: Hello World!
 
@@ -24,10 +28,10 @@ main = hspec $ do
                           That's all about something simple!
 
                           Your faithful student, Twilight Sparkle.|]
-      Fim.parse (unpack program) `shouldBe` Right [Class
-                                                   "Hello World"
-                                                   Celestia
-                                                  [Function "something simple" True []]]
+      let expected = Class (Identifier "Hello World" Exclamation) Celestia [
+            Function (Identifier "something simple" FullStop) True []
+            ] (Identifier "Twilight Sparkle" FullStop)
+      Fim.parse program `shouldBe` Right [expected]
     it "should lex a simple hello world" $ do
       let program = [text|Dear Princess Celestia: Hello World!
 
@@ -37,15 +41,16 @@ main = hspec $ do
 
                           Your faithful student, Twilight Sparkle.
                          |]
-      Fim.parse (unpack program) `shouldBe` Right [Class
-                                                  "Hello World"
-                                                  Celestia
-                                                  [
-                                                    Function "something simple" True [
-                                                      SISaid (VLiteral (StringLiteral "Hello, World!"))
-                                                      ]
-                                                  ]
-                                                  ]
+      let expected = Class (Identifier "Hello World" Exclamation) Celestia [
+            Function (Identifier "something simple" FullStop) True [
+                Output Said (
+                    VLiteral (StringLiteral "Hello, World!" FancyQuote )
+                    )
+                    Exclamation
+                ]
+            ] (Identifier "Twilight Sparkle" FullStop)
+
+      Fim.parse program `shouldBe` Right [expected]
   describe "fim interpreter" $
     it "should run hello world" $ do
       let program = [text|Dear Princess Celestia: Hello World!

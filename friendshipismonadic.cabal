@@ -9,29 +9,77 @@ author:              Liz Frost
 maintainer:          web@stillinbeta.com
 copyright:           BSD3
 category:            Demo
-build-type:          Simpl
+build-type:          Simple
 cabal-version:       >=1.10
 extra-source-files:  README.md
 
-executable friendshipismonadic
-  hs-source-dirs:      src
-  main-is:             Main.hs
-  default-language:    Haskell2010
-  build-depends:       base >= 4.7 && < 5,
-                       parsec == 3.1.*,
-                       text == 1.2.*,
-                       transformers == 0.5.*
 
-test-suite fim-test
+
+library
+        default-language:    Haskell2010
+        hs-source-dirs:      src
+        exposed-modules:     Language.Fim
+                             Language.Fim.Types
+                             Language.Fim.Parser
+       other-modules:        Language.Fim.Types.Print
+                             Language.Fim.Parser.Literal
+                             Language.Fim.Parser.Tokens
+                             Language.Fim.Parser.Statement
+                             Language.Fim.Parser.Methods
+                             Language.Fim.Parser.Value
+       build-depends:        base >= 4.7 && < 5,
+                             parsec == 3.1.*,
+                             text == 1.2.*,
+                             transformers == 0.5.*
+
+-- executable fim
+--   hs-source-dirs:      src
+--   main-is:             Main.hs
+--   default-language:    Haskell2010
+--   build-depends:       base >= 4.7 && < 5,
+--                        parsec == 3.1.*,
+--                        text == 1.2.*,
+--                        transformers == 0.5.*
+
+test-suite fim-hspec
            type: exitcode-stdio-1.0
-           main-is: Test.hs
-           other-modules: Fim
-                          Fim.Types
-                          Fim.Parser
+           default-language:    Haskell2010
+           main-is:             Test.hs
+           other-modules:       Language.Fim
+                                Language.Fim.Types
+                                Language.Fim.Types.Print
+                                Language.Fim.Parser
+                                Language.Fim.Parser.Literal
+                                Language.Fim.Parser.Tokens
+                                Language.Fim.Parser.Statement
+                                Language.Fim.Parser.Methods
+                                Language.Fim.Parser.Value
            hs-source-dirs:      test
                                 src
            build-depends:       base >= 4.7 && < 5,
                                 hspec == 2.*,
+                                neat-interpolation == 0.3.*,
+                                parsec == 3.1.*,
+                                text == 1.2.*,
+                                transformers == 0.5.*
+
+test-suite fim-qc
+           type: exitcode-stdio-1.0
+           default-language:    Haskell2010
+           main-is:             TestQC.hs
+           other-modules:       Language.Fim
+                                Language.Fim.Types
+                                Language.Fim.Types.Print
+                                Language.Fim.Parser
+                                Language.Fim.Parser.Literal
+                                Language.Fim.Parser.Tokens
+                                Language.Fim.Parser.Statement
+                                Language.Fim.Parser.Methods
+                                Language.Fim.Parser.Value
+           hs-source-dirs:      test
+                                src
+           build-depends:       base >= 4.7 && < 5,
+                                hedgehog == 0.5,
                                 neat-interpolation == 0.3.*,
                                 parsec == 3.1.*,
                                 text == 1.2.*,
