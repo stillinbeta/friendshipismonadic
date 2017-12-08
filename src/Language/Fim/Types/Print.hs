@@ -52,7 +52,8 @@ instance PrettyPrintable Statement where
                , prettyPrint $ outputTerminator o, "\n"]
 
 instance PrettyPrintable Value where
-  prettyPrint (VLiteral l) = prettyPrint l
+  prettyPrint v@VLiteral{} = prettyPrint $ vLiteral v
+  prettyPrint v@VVariable{} = prettyPrint $ vVariable v
 
 instance PrettyPrintable Literal where
   prettyPrint s@StringLiteral{} =
@@ -67,3 +68,6 @@ instance PrettyPrintable Literal where
           SimpleQuote -> ('\'', '\'') in
       T.pack [open, clValue c, close]
   prettyPrint Null = "null"
+
+instance PrettyPrintable Variable where
+  prettyPrint = vName

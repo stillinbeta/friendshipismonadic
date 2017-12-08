@@ -12,8 +12,9 @@ import qualified Hedgehog.Range as Range
 
 import Control.Monad (unless)
 import Control.Applicative ((<|>))
-import qualified System.Exit
+import Data.Char (isDigit)
 import qualified Data.Text as T
+import qualified System.Exit
 
 main :: IO ()
 main = do
@@ -85,8 +86,10 @@ genOutput = do
                 , outputTerminator = terminator}
 
 genValue :: Gen Value
-genValue = Gen.choice [VLiteral <$> genLiteral]
+genValue = Gen.choice [ VLiteral <$> genLiteral
+                      , VVariable <$> genVariable]
 
+-- Literals --
 
 genLiteral :: Gen Literal
 genLiteral = Gen.choice [pure Null
@@ -117,3 +120,18 @@ genStringLiteral = do
 
 genQuote :: Gen StringQuote
 genQuote = Gen.element [SimpleQuote, FancyQuote]
+
+-- Variables --
+
+genVariable :: Gen Variable
+genVariable = do
+  name <- Gen.filter isValidVariable genName
+  return Variable { vName = name }
+
+isValidVariable :: T.Text -> Bool
+isValidVariable t =
+  let t0 = T.head t in
+    not (isDigit t0)
+    && (t0 `notElem` "\"‘“'-")
+    -- TODO: should exclude all reserved words
+    && (not $ T.isInfixOf (T.pack "I ") t)

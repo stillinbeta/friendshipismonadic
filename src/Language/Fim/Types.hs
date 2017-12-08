@@ -1,13 +1,14 @@
 module Language.Fim.Types ( Class(..)
-                 , Function(..)
-                 , Statement(..)
-                 , Value(..)
-                 , Literal(..)
-                 , StringQuote(..)
-                 , Identifier(..)
-                 , Terminator(..)
-                 , OutputVerb(..)
-                 ) where
+                          , Function(..)
+                          , Statement(..)
+                          , Value(..)
+                          , Literal(..)
+                          , StringQuote(..)
+                          , Identifier(..)
+                          , Terminator(..)
+                          , OutputVerb(..)
+                          , Variable(..)
+                          ) where
 
 import Data.Text as T
 
@@ -33,7 +34,11 @@ data Statement = Output { outputVerb :: OutputVerb
 
 data OutputVerb = Sang | Wrote | Said | Thought deriving (Eq, Show)
 
-data Value = VLiteral Literal deriving (Eq, Show)
+data Value = VLiteral { vLiteral :: Literal}
+           | VVariable { vVariable :: Variable}
+  deriving (Eq, Show)
+
+data Variable = Variable { vName :: T.Text } deriving (Eq, Show)
 
 -- TODO: Literals can be prefixed with 'the word,' 'the number,' etc
 data Literal = StringLiteral { slValue :: T.Text
@@ -60,6 +65,5 @@ data StringQuote = SimpleQuote | FancyQuote deriving (Eq, Show)
 data Identifier = Identifier { idName :: T.Text
                              , idTerminator :: Terminator
                              } deriving (Eq, Show)
-
 
 data Terminator = FullStop | Comma | QuestionMark | Exclamation deriving (Eq, Show)
