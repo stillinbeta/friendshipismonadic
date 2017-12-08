@@ -23,6 +23,7 @@ main = do
 prop_parse :: Property
 prop_parse = property $ do
   cls <- forAllWith (T.unpack . prettyPrint) genClass
+  -- cls <- forAll genClass
   parse (prettyPrint cls) === Right [cls]
 
 genClass :: Gen Class
@@ -88,14 +89,31 @@ genValue = Gen.choice [VLiteral <$> genLiteral]
 
 
 genLiteral :: Gen Literal
-genLiteral = Gen.choice [genStringLiteral, pure Null ]
+genLiteral = Gen.choice [pure Null
+                        , genCharacterLiteral
+                        , genStringLiteral
+                        , genNumberLiteral]
+
+genNumberLiteral :: Gen Literal
+genNumberLiteral = NumberLiteral <$> Gen.double (Range.linearFrac (-1000000) 1000000)
+
+genCharacterLiteral :: Gen Literal
+genCharacterLiteral = do
+  char <- Gen.unicode
+  quote <- genQuote
+  return CharacterLiteral { clValue = char
+                          , clWrap = quote
+                          }
 
 genStringLiteral :: Gen Literal
 genStringLiteral = do
-  quote <- Gen.element [SimpleQuote, FancyQuote]
+  quote <- genQuote
   -- We don't have escaping
   let filterFunc = case quote of
                      SimpleQuote -> (/='"')
                      FancyQuote  -> (/='”')
   val <- Gen.text (Range.linear 0 250) $ Gen.filter filterFunc Gen.unicode
   return StringLiteral { slValue = val, slWrap = quote}
+
+genQuote :: Gen StringQuote
+genQuote = Gen.element [SimpleQuote, FancyQuote]

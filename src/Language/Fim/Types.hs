@@ -35,10 +35,25 @@ data OutputVerb = Sang | Wrote | Said | Thought deriving (Eq, Show)
 
 data Value = VLiteral Literal deriving (Eq, Show)
 
+-- TODO: Literals can be prefixed with 'the word,' 'the number,' etc
 data Literal = StringLiteral { slValue :: T.Text
+                             -- TODO: wrapping quotes don't have to be the same
                              , slWrap :: StringQuote
                              }
-             | Null deriving (Eq, Show)
+             | NumberLiteral { nlValue :: Double} -- TODO: Supposed to be Float64
+             | CharacterLiteral { clValue :: Char
+                                , clWrap :: StringQuote
+                                }
+             | Null deriving Show
+
+-- Manually define Eq so our tests don't barf on the doubles
+instance Eq Literal where
+  (StringLiteral val1 wrap1) == (StringLiteral val2 wrap2) = val1 == val2 && wrap1 == wrap2
+  (CharacterLiteral val1 wrap1) == (CharacterLiteral val2 wrap2) = val1 == val2 && wrap1 == wrap2
+  Null == Null = True
+  (NumberLiteral n1) == (NumberLiteral n2) = abs (n1 - n2) < 0.00000001
+  _ == _ = False
+
 
 data StringQuote = SimpleQuote | FancyQuote deriving (Eq, Show)
 

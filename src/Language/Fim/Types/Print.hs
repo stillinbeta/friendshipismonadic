@@ -60,4 +60,10 @@ instance PrettyPrintable Literal where
           FancyQuote -> ("“", "”")
           SimpleQuote -> ("\"", "\"") in
       T.concat [open, slValue s, close]
+  prettyPrint n@NumberLiteral{} = T.pack . show . nlValue $ n
+  prettyPrint c@CharacterLiteral{} =
+    let (open, close) = case clWrap c of
+          FancyQuote -> ('‘', '’' )
+          SimpleQuote -> ('\'', '\'') in
+      T.pack [open, clValue c, close]
   prettyPrint Null = "null"
