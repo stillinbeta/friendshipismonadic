@@ -17,7 +17,7 @@ import qualified Data.Text as T
 
 main :: IO ()
 main = do
-  passed <- checkParallel $$(discover)
+  passed <- checkParallel $$discover
   unless passed System.Exit.exitFailure
 
 prop_parse :: Property
@@ -44,8 +44,11 @@ genSuperClass =
 genIdentifier :: Gen Identifier
 genIdentifier = do
   name <- genName
-  punctuation <- Gen.element [FullStop, Comma, QuestionMark, Exclamation]
+  punctuation <- genTerminator
   return Identifier { idName = name, idTerminator = punctuation }
+
+genTerminator :: Gen Terminator
+genTerminator = Gen.element [FullStop, Comma, QuestionMark, Exclamation]
 
 genName :: Gen T.Text
 genName = Gen.text (Range.linear 1 100) $ Gen.filter (not . isPunctuation) Gen.unicode
@@ -62,7 +65,37 @@ genFunction :: Gen Function
 genFunction = do
   name <- genIdentifier
   today <- Gen.bool_
+  body <- Gen.list (Range.linear 0 100) genStatement
   return Function { functionName = name
                   , isMain = today
-                  , functionBody = []
+                  , functionBody = body
                   }
+
+genStatement :: Gen Statement
+genStatement = Gen.choice [genOutput]
+
+genOutput :: Gen Statement
+genOutput = do
+  verb <- Gen.element [Sang, Wrote, Said, Thought]
+  value <- genValue
+  terminator <- genTerminator
+  return Output { outputVerb = verb
+                , outputValue = value
+                , outputTerminator = terminator}
+
+genValue :: Gen Value
+genValue = Gen.choice [VLiteral <$> genLiteral]
+
+
+genLiteral :: Gen Literal
+genLiteral = Gen.choice [genStringLiteral, pure Null ]
+
+genStringLiteral :: Gen Literal
+genStringLiteral = do
+  quote <- Gen.element [SimpleQuote, FancyQuote]
+  -- We don't have escaping
+  let filterFunc = case quote of
+                     SimpleQuote -> (/='"')
+                     FancyQuote  -> (/='”')
+  val <- Gen.text (Range.linear 0 250) $ Gen.filter filterFunc Gen.unicode
+  return StringLiteral { slValue = val, slWrap = quote}

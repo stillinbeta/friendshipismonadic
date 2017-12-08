@@ -37,6 +37,27 @@ instance PrettyPrintable Function where
   prettyPrint f =
     let today = if isMain f then "Today " else "" in
       T.concat[ today, "I learned " , prettyPrint $ functionName f, "\n"
-              -- body
+              , T.concat $ map prettyPrint (functionBody f)
               , "That's all about ", idName $ functionName f, "!\n"
               ]
+
+instance PrettyPrintable Statement where
+  prettyPrint o@Output{} =
+    let verb = case outputVerb o of
+          Said -> "said"
+          Sang -> "sang"
+          Thought -> "thought"
+          Wrote -> "wrote" in
+      T.concat ["I ", verb, " ", prettyPrint $ outputValue o
+               , prettyPrint $ outputTerminator o, "\n"]
+
+instance PrettyPrintable Value where
+  prettyPrint (VLiteral l) = prettyPrint l
+
+instance PrettyPrintable Literal where
+  prettyPrint s@StringLiteral{} =
+    let (open, close) = case slWrap s of
+          FancyQuote -> ("“", "”")
+          SimpleQuote -> ("\"", "\"") in
+      T.concat [open, slValue s, close]
+  prettyPrint Null = "null"

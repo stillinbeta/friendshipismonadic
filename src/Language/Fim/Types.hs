@@ -38,7 +38,7 @@ data Value = VLiteral Literal deriving (Eq, Show)
 data Literal = StringLiteral { slValue :: T.Text
                              , slWrap :: StringQuote
                              }
-  | Null deriving (Eq, Show)
+             | Null deriving (Eq, Show)
 
 data StringQuote = SimpleQuote | FancyQuote deriving (Eq, Show)
 

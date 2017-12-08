@@ -6,10 +6,16 @@ import qualified Data.Text as T
 import Control.Applicative (many)
 import Control.Monad (void)
 import Text.Parsec.Text (Parser)
-import Text.Parsec.Char (oneOf, noneOf)
+import Text.Parsec.Char (oneOf, noneOf, string)
+import Text.Parsec.Combinator (choice)
 
 literal :: Parser Types.Literal
-literal = do
+literal = choice [const Types.Null <$> string "null", stringLiteral]
+
+
+
+stringLiteral :: Parser Types.Literal
+stringLiteral = do
   quote <- oneOf "\"“"
   let (match, quoteType) = case quote of
         '"' -> ('"' , Types.SimpleQuote)
