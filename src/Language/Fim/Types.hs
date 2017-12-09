@@ -7,6 +7,7 @@ module Language.Fim.Types ( Class(..)
                           , Identifier(..)
                           , Terminator(..)
                           , OutputVerb(..)
+                          , DeclareVerb(..)
                           , Variable(..)
                           ) where
 
@@ -30,7 +31,15 @@ data Function = Function { functionName :: Identifier
 data Statement = Output { outputVerb :: OutputVerb
                         , outputValue :: Value
                         , outputTerminator :: Terminator
-                        } deriving (Eq, Show)
+                        }
+               | Declaration { declareVerb :: DeclareVerb
+                             , declareName :: Variable
+                             , declareValue :: Literal
+                             , declareIsConsnant :: Bool
+                             }
+               deriving (Eq, Show)
+
+data DeclareVerb = Is | Was | Has | Had | Like | Likes | Liked deriving (Eq, Show)
 
 data OutputVerb = Sang | Wrote | Said | Thought deriving (Eq, Show)
 

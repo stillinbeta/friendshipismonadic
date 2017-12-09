@@ -50,6 +50,13 @@ instance PrettyPrintable Statement where
           Wrote -> "wrote" in
       T.concat ["I ", verb, " ", prettyPrint $ outputValue o
                , prettyPrint $ outputTerminator o, "\n"]
+  prettyPrint d@Declaration{} =
+      -- is this cheating?
+      let verb = T.toLower . T.pack . show $ declareVerb d
+          always = if declareIsConsnant d then " always" else "" in
+        T.concat ["Did you know that ", prettyPrint $ declareName d
+                 , " ", verb, always, " ", prettyPrint $ declareValue d, "?\n"]
+    -- TODO: should exclude all reserved words
 
 instance PrettyPrintable Value where
   prettyPrint v@VLiteral{} = prettyPrint $ vLiteral v

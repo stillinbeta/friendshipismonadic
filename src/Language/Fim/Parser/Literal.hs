@@ -12,10 +12,13 @@ import Text.Parsec.Char (oneOf, noneOf, string, digit, char, anyChar)
 import Text.Parsec.Combinator (choice, many1, optionMaybe)
 
 literal :: Parser Types.Literal
-literal = choice [const Types.Null <$> string "null" <?> "null"
+literal = choice [ nullLiteral <?> "null"
                  , charLiteral <?> "character literal"
                  , numberLiteral <?> "number"
                  , stringLiteral <?> "string literal"]
+
+nullLiteral :: Parser Types.Literal
+nullLiteral = const Types.Null <$> string "null"
 
 numberLiteral :: Parser Types.Literal
 numberLiteral = do

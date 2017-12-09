@@ -6,6 +6,8 @@ import Language.Fim
 import Language.Fim.Types
 import Language.Fim.Types.Print
 
+import Language.Fim.Parser.Tokens (reservedWordList)
+
 import Hedgehog
 import qualified Hedgehog.Gen as Gen
 import qualified Hedgehog.Range as Range
@@ -53,7 +55,9 @@ genTerminator :: Gen Terminator
 genTerminator = Gen.element [FullStop, Comma, QuestionMark, Exclamation]
 
 genName :: Gen T.Text
-genName = Gen.text (Range.linear 1 100) $ Gen.filter (not . isPunctuation) Gen.unicode
+-- shrinks to Fluttershy, makes errors look a lil nicer :)
+genName = pure (T.pack "Fluttershy")
+  <|> Gen.text (Range.linear 1 100) (Gen.filter (not . isPunctuation) Gen.unicode)
 
 isPunctuation :: Char -> Bool
 isPunctuation char = case char of
@@ -74,7 +78,8 @@ genFunction = do
                   }
 
 genStatement :: Gen Statement
-genStatement = Gen.choice [genOutput]
+genStatement = Gen.choice [ genOutput
+                          , genDeclaration]
 
 genOutput :: Gen Statement
 genOutput = do
@@ -84,6 +89,18 @@ genOutput = do
   return Output { outputVerb = verb
                 , outputValue = value
                 , outputTerminator = terminator}
+
+genDeclaration :: Gen Statement
+genDeclaration = do
+  verb <- Gen.element [Is, Was, Has, Had, Like, Likes, Liked]
+  name <- genVariable
+  value <- genLiteral
+  isConstant <- Gen.bool
+  return Declaration { declareVerb = verb
+                     , declareName = name
+                     , declareValue = value
+                     , declareIsConsnant = isConstant
+                     }
 
 genValue :: Gen Value
 genValue = Gen.choice [ VLiteral <$> genLiteral
@@ -131,7 +148,6 @@ genVariable = do
 isValidVariable :: T.Text -> Bool
 isValidVariable t =
   let t0 = T.head t in
-    not (isDigit t0)
+    (not (isDigit t0))
     && (t0 `notElem` "\"‘“'-")
-    -- TODO: should exclude all reserved words
-    && (not $ T.isInfixOf (T.pack "I ") t)
+    && (not $ all ((`T.isInfixOf`t) . T.pack . (' ':)) reservedWordList)
