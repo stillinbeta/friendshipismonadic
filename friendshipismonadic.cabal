@@ -20,11 +20,12 @@ library
         hs-source-dirs:      src
         exposed-modules:     Language.Fim
                              Language.Fim.Types
+                             Language.Fim.Types.Print
                              Language.Fim.Parser
-                             Language.Fim.Eval
-        other-modules:       Language.Fim.Types.Print
-                             Language.Fim.Parser.Literal
+                             -- TODO: move the reserved words list to a constants file
                              Language.Fim.Parser.Tokens
+                             Language.Fim.Eval
+        other-modules:       Language.Fim.Parser.Literal
                              Language.Fim.Parser.Statement
                              Language.Fim.Parser.Methods
                              Language.Fim.Parser.Value
@@ -53,43 +54,20 @@ test-suite fim-hspec
            type: exitcode-stdio-1.0
            default-language:    Haskell2010
            main-is:             Test.hs
-           other-modules:       Language.Fim
-                                Language.Fim.Types
-                                Language.Fim.Types.Print
-                                Language.Fim.Parser
-                                Language.Fim.Parser.Literal
-                                Language.Fim.Parser.Tokens
-                                Language.Fim.Parser.Statement
-                                Language.Fim.Parser.Methods
-                                Language.Fim.Parser.Value
            hs-source-dirs:      test
-                                src
            build-depends:       base >= 4.7 && < 5,
+                                friendshipismonadic,
                                 hspec == 2.*,
                                 neat-interpolation == 0.3.*,
-                                parsec == 3.1.*,
-                                text == 1.2.*,
-                                transformers == 0.5.*,
-                                containers == 0.5.*
+                                text == 1.2.*
 
 test-suite fim-qc
            type: exitcode-stdio-1.0
            default-language:    Haskell2010
            main-is:             TestQC.hs
-           other-modules:       Language.Fim
-                                Language.Fim.Types
-                                Language.Fim.Types.Print
-                                Language.Fim.Parser
-                                Language.Fim.Parser.Literal
-                                Language.Fim.Parser.Tokens
-                                Language.Fim.Parser.Statement
-                                Language.Fim.Parser.Methods
-                                Language.Fim.Parser.Value
            hs-source-dirs:      test
-                                src
            build-depends:       base >= 4.7 && < 5,
+                                friendshipismonadic,
                                 hedgehog == 0.5,
                                 neat-interpolation == 0.3.*,
-                                parsec == 3.1.*,
-                                text == 1.2.*,
-                                transformers == 0.5.*
+                                text == 1.2.*

@@ -5,8 +5,6 @@ module Main where
 import qualified Language.Fim as Fim
 import Language.Fim.Types
 
-import Data.Text (unpack)
-import Control.Monad.Trans.Writer.Lazy (execWriter)
 import NeatInterpolation (text)
 import Test.Hspec
 
@@ -51,15 +49,3 @@ main = hspec $ do
             ] (Identifier "Twilight Sparkle" FullStop)
 
       Fim.parse program `shouldBe` Right [expected]
-  describe "fim interpreter" $
-    it "should run hello world" $ do
-      let program = [text|Dear Princess Celestia: Hello World!
-
-                          Today I learned something simple.
-                          I said “Hello, World!”!
-                          That's all about something simple!
-
-                          Your faithful student, Twilight Sparkle.
-                         |]
-      pending
-      execWriter (Fim.run $ unpack program) `shouldBe` ["Hello, World!\n"]
