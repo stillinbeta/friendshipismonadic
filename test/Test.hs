@@ -20,7 +20,7 @@ main = hspec $ do
       let expected = Class (Identifier "Hello World" Exclamation)
                            Celestia []
                            (Identifier "Twilight Sparkle" FullStop)
-      Fim.parse program `shouldBe` Right [expected]
+      Fim.parse program `shouldBe` Right expected
     it "should lex a class with one empty function" $ do
       let program = [text|Dear Princess Celestia: Hello World!
 
@@ -31,7 +31,7 @@ main = hspec $ do
       let expected = Class (Identifier "Hello World" Exclamation) Celestia [
             Function (Identifier "something simple" FullStop) True []
             ] (Identifier "Twilight Sparkle" FullStop)
-      Fim.parse program `shouldBe` Right [expected]
+      Fim.parse program `shouldBe` Right expected
     it "should lex a simple hello world" $ do
       let program = [text|Dear Princess Celestia: Hello World!
 
@@ -50,7 +50,7 @@ main = hspec $ do
                 ]
             ] (Identifier "Twilight Sparkle" FullStop)
 
-      Fim.parse program `shouldBe` Right [expected]
+      Fim.parse program `shouldBe` Right expected
   describe "interpreter" $ do
     it "should output Hello Equestria" $ do
       let program = wrapBoilerplate "I thought “Hello, Equestria!”!\n"

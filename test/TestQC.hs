@@ -27,7 +27,7 @@ prop_parse :: Property
 prop_parse = property $ do
   cls <- forAllWith (T.unpack . prettyPrint) genClass
   -- cls <- forAll genClass
-  parse (prettyPrint cls) === Right [cls]
+  parse (prettyPrint cls) === Right cls
 
 genClass :: Gen Class
 genClass = do

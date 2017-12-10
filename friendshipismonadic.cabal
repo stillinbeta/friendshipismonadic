@@ -25,9 +25,10 @@ library
                              -- TODO: move the reserved words list to a constants file
                              Language.Fim.Parser.Tokens
                              Language.Fim.Eval
-        other-modules:       Language.Fim.Parser.Literal
+        other-modules:       Language.Fim.Parser.Class
                              Language.Fim.Parser.Statement
                              Language.Fim.Parser.Methods
+                             Language.Fim.Parser.Literal
                              Language.Fim.Parser.Value
         build-depends:       base >= 4.7 && < 5,
                              parsec == 3.1.*,

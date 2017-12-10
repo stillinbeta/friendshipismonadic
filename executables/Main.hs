@@ -1,7 +1,7 @@
 module Main where
 
 import qualified Language.Fim.Eval as Eval
-import Language.Fim (parse)
+import Language.Fim (run)
 
 import Prelude hiding (readFile)
 import Data.Text.IO (readFile)
@@ -24,7 +24,7 @@ main = do
       errorMsg $ "usage: " ++ progName ++ " <input file>"
     (sourceFile:_) -> do
       file <- readFile sourceFile
-      case parse file of
-        Left parseFailure -> errorMsg parseFailure
-        Right [] -> errorMsg "no class found"
-        Right (cls:_) -> Eval.runClass cls
+      res <- run file
+      case res of
+        Just err -> errorMsg err
+        _ -> return ()
