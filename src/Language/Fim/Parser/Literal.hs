@@ -57,5 +57,5 @@ stringLiteral = do
         '“' -> return ('”' , Types.FancyQuote)
         _ -> fail $ "unexpected matched quote " ++ [quote]
   str <- T.pack <$> many (noneOf [match])
-  void $ oneOf [match]
+  void $ char match
   return $ Types.StringLiteral str quoteType

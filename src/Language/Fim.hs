@@ -8,8 +8,8 @@ import qualified Text.Parsec as Parsec
 import Text.Parsec.Combinator (many1)
 import Control.Monad.Trans.Writer.Lazy
 
-parse :: T.Text -> Either Parsec.ParseError [Class]
-parse = Parsec.parse (many1 fimClass) ""
+parse :: T.Text -> Either String [Class]
+parse = either (Left . show) Right . Parsec.parse (many1 fimClass) ""
 
 run :: String -> Writer [String] ()
 run _ = return ()
