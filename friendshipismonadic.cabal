@@ -59,7 +59,8 @@ test-suite fim-hspec
                                 friendshipismonadic,
                                 hspec == 2.*,
                                 neat-interpolation == 0.3.*,
-                                text == 1.2.*
+                                text == 1.2.*,
+                                silently == 1.2.5
 
 test-suite fim-qc
            type: exitcode-stdio-1.0

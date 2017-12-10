@@ -5,7 +5,9 @@ module Main where
 import qualified Language.Fim as Fim
 import Language.Fim.Types
 
+import qualified Data.Text as T
 import NeatInterpolation (text)
+import System.IO.Silently (capture)
 import Test.Hspec
 
 main :: IO ()
@@ -49,3 +51,19 @@ main = hspec $ do
             ] (Identifier "Twilight Sparkle" FullStop)
 
       Fim.parse program `shouldBe` Right [expected]
+  describe "interpreter" $ do
+    it "should output Hello Equestria" $ do
+      let program = wrapBoilerplate "I thought “Hello, Equestria!”!\n"
+      capture (Fim.run program) `shouldReturn` ("Hello, Equestria!\n", Nothing)
+
+wrapBoilerplate :: T.Text -> T.Text
+wrapBoilerplate t = T.concat [ [text|Dear Princess Celestia: Hello World!
+
+                                     Today I learned something simple.
+                                     |]
+                             , t
+                             , [text|That's all about something simple!
+
+                                     Your faithful student, Twilight Sparkle.
+                                     |]
+                             ]
