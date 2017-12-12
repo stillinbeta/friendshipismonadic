@@ -8,11 +8,10 @@ import qualified Language.Fim.Parser.Methods as Methods
 import Control.Applicative (many)
 import Control.Monad (void)
 import qualified Data.Text as T
-import Data.Maybe (isJust, catMaybes)
 import Text.Parsec (try, (<|>), (<?>))
 import Text.Parsec.Text (Parser)
-import Text.Parsec.Char (anyChar, space, string, newline, noneOf, oneOf, char)
-import Text.Parsec.Combinator (choice, manyTill, many1, optionMaybe)
+import Text.Parsec.Char (string, newline, noneOf)
+import Text.Parsec.Combinator (choice, optionMaybe)
 
 fimClass :: Parser Types.Class
 fimClass = do

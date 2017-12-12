@@ -7,8 +7,9 @@ import Language.Fim.Types
 
 import qualified Data.Text as T
 import NeatInterpolation (text)
-import System.IO.Silently (capture)
+import System.IO.Silently (capture, hCapture)
 import Test.Hspec
+import System.IO (stderr)
 
 main :: IO ()
 main = hspec $ do
@@ -55,6 +56,19 @@ main = hspec $ do
     it "should output Hello Equestria" $ do
       let program = wrapBoilerplate "I thought “Hello, Equestria!”!\n"
       capture (Fim.run program) `shouldReturn` ("Hello, Equestria!\n", Nothing)
+    it "should throw errors for unknown variables" $ do
+      let program = wrapBoilerplate "I sang Hello Equestria!\n"
+      hCapture [stderr] (Fim.run program)
+        `shouldReturn` ("undefined variable Hello Equestria\n", Nothing)
+    it "should output from variables" $ do
+      let program =
+            wrapBoilerplate [text|Did you know that my greeting is the phrase “Hello, Equestria!”
+                                  I sang my greeting!
+                                  |]
+      hCapture [stderr] (Fim.run program)
+        `shouldReturn` ("undefined variable Hello Equestria\n", Nothing)
+
+
 
 wrapBoilerplate :: T.Text -> T.Text
 wrapBoilerplate t = T.concat [ [text|Dear Princess Celestia: Hello World!

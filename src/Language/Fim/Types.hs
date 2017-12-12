@@ -47,7 +47,7 @@ data Value = VLiteral { vLiteral :: Literal}
            | VVariable { vVariable :: Variable}
   deriving (Eq, Show)
 
-data Variable = Variable { vName :: T.Text } deriving (Eq, Show)
+newtype Variable = Variable { vName :: T.Text } deriving (Eq, Show)
 
 -- TODO: Literals can be prefixed with 'the word,' 'the number,' etc
 data Literal = StringLiteral { slValue :: T.Text

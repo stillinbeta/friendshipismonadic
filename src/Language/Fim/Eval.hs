@@ -4,21 +4,20 @@ module Language.Fim.Eval (runClass
                          ) where
 
 import Language.Fim.Types
+import Language.Fim.Eval.Types (ValueBox(..), boxLiteral)
 
 import Prelude hiding (putStrLn)
 import Control.Monad.State.Class
-import Control.Monad.Trans.State
+import Control.Monad.State (runStateT)
 import Control.Monad.Error.Class
 import Control.Monad.Except
 import qualified Data.Map as Map
 import Data.List (find)
 import qualified Data.Text as T
-import Data.Text.IO (putStrLn)
-import System.IO (stderr, hPutStrLn)
+import Data.Text.IO (putStrLn, hPutStrLn)
+import System.IO (stderr)
 
-data EValue = EValueString Int
-
-data EvalState = EvalState { variables :: (Map.Map String EValue)
+data EvalState = EvalState { variables :: (Map.Map T.Text ValueBox)
                            }
 
 newEvalState :: EvalState
@@ -32,7 +31,7 @@ runClass cls = do
     Left errMsg -> hPutStrLn stderr errMsg
     Right _ -> return ()
 
-evalClass :: (MonadState EvalState m, MonadError String m, MonadIO m) => Class -> m ()
+evalClass :: (MonadState EvalState m, MonadError T.Text m, MonadIO m) => Class -> m ()
 evalClass cls = do
   let maybeFunc = find isMain $ classBody cls
   case maybeFunc of
@@ -40,19 +39,27 @@ evalClass cls = do
     Nothing -> throwError "no main method"
 
 
-evalMainMethod :: (MonadState EvalState m, MonadError String m, MonadIO m) => Function -> m ()
+evalMainMethod :: (MonadState EvalState m, MonadError T.Text m, MonadIO m) => Function -> m ()
 evalMainMethod mthd = mapM_ evalStatement $ functionBody mthd
 
-evalStatement :: (MonadState EvalState m, MonadError String m, MonadIO m) => Statement -> m ()
-evalStatement o@Output{} =
-  case outputValue o of
-    VVariable{} -> throwError "not inmplemented"
-    VLiteral { vLiteral = lit } -> liftIO . putStrLn . printableLiteral $ lit
+evalStatement :: (MonadState EvalState m, MonadError T.Text m, MonadIO m) => Statement -> m ()
 
-printableLiteral ::  Literal -> T.Text
+evalStatement o@Output{} = do
+  box <- case outputValue o of
+                 v@VVariable{} -> do
+                   let varName = vName . vVariable $ v
+                   maybeVal <- gets $ Map.lookup varName . variables
+                   case maybeVal of
+                     Just val -> return val
+                     Nothing -> throwError $ T.concat ["undefined variable ", varName]
+
+                 VLiteral { vLiteral = lit } -> return $ boxLiteral lit
+  liftIO . putStrLn . printableLiteral $ box
+
+printableLiteral ::  ValueBox -> T.Text
 printableLiteral literal =
   case literal of
-    StringLiteral { slValue = str} -> str
-    NumberLiteral { nlValue = num} -> T.pack $ show num
-    CharacterLiteral { clValue = chr } -> T.singleton chr
-    Null -> "nothing"
+    StringBox s -> s
+    NumberBox num -> T.pack $ show num
+    CharacterBox c -> T.singleton c
+    NullBox -> "nothing"
