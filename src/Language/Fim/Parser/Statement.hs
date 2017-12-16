@@ -52,7 +52,7 @@ declaration = do
   newline
   return Types.Declaration { Types.declareVerb = verb
                            , Types.declareName = var
-                           , Types.declareValue = val
+                           , Types.declareValue = Types.VLiteral val
                            , Types.declareIsConsnant = isConstant
                            }
 

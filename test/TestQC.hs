@@ -94,13 +94,21 @@ genDeclaration :: Gen Statement
 genDeclaration = do
   verb <- Gen.element [Is, Was, Has, Had, Like, Likes, Liked]
   name <- genVariable
-  value <- genLiteral
   isConstant <- Gen.bool
+  typeArticle <- Just <$> genArticle
+  (value, typeNoun) <- genLiteralWithNoun
+
   return Declaration { declareVerb = verb
                      , declareName = name
-                     , declareValue = value
+                     , declareValue = VLiteral value
                      , declareIsConsnant = isConstant
+                     , declareTypeArticle = typeArticle
+                     , declareTypeNoun = typeNoun
                      }
+
+-- TODO: enforce a/an consistency
+genArticle :: Gen Article
+genArticle = Gen.element [The, A, An]
 
 genValue :: Gen Value
 genValue = Gen.choice [ VLiteral <$> genLiteral
@@ -109,10 +117,18 @@ genValue = Gen.choice [ VLiteral <$> genLiteral
 -- Literals --
 
 genLiteral :: Gen Literal
-genLiteral = Gen.choice [pure Null
-                        , genCharacterLiteral
+genLiteral = Gen.choice [ genCharacterLiteral
                         , genStringLiteral
                         , genNumberLiteral]
+
+genLiteralWithNoun :: Gen (Literal, TypeNoun)
+genLiteralWithNoun = do
+  literal <- genLiteral
+  noun <- case literal of
+    NumberLiteral{} -> pure Number
+    StringLiteral{} -> Gen.element [Word, Phrase, Sentence, Quote, Name]
+    CharacterLiteral{} -> Gen.element [Letter, Character]
+  return (literal, noun)
 
 genNumberLiteral :: Gen Literal
 genNumberLiteral = NumberLiteral <$> Gen.double (Range.linearFrac (-1000000) 1000000)

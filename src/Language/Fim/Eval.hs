@@ -43,18 +43,19 @@ evalMainMethod :: (MonadState EvalState m, MonadError T.Text m, MonadIO m) => Fu
 evalMainMethod mthd = mapM_ evalStatement $ functionBody mthd
 
 evalStatement :: (MonadState EvalState m, MonadError T.Text m, MonadIO m) => Statement -> m ()
-
 evalStatement o@Output{} = do
   box <- case outputValue o of
-                 v@VVariable{} -> do
-                   let varName = vName . vVariable $ v
-                   maybeVal <- gets $ Map.lookup varName . variables
-                   case maybeVal of
-                     Just val -> return val
-                     Nothing -> throwError $ T.concat ["undefined variable ", varName]
-
-                 VLiteral { vLiteral = lit } -> return $ boxLiteral lit
+           VVariable { vVariable = v } -> lookupVariable v
+           VLiteral { vLiteral = lit } -> return $ boxLiteral lit
   liftIO . putStrLn . printableLiteral $ box
+
+lookupVariable :: (MonadState EvalState m, MonadError T.Text m) => Variable -> m ValueBox
+lookupVariable v= do
+  let varName = vName v
+  maybeVal <- gets $ Map.lookup varName . variables
+  case maybeVal of
+    Just val -> return val
+    Nothing -> throwError $ T.concat ["undefined variable ", varName]
 
 printableLiteral ::  ValueBox -> T.Text
 printableLiteral literal =

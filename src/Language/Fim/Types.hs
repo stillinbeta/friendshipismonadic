@@ -9,6 +9,8 @@ module Language.Fim.Types ( Class(..)
                           , OutputVerb(..)
                           , DeclareVerb(..)
                           , Variable(..)
+                          , Article(..)
+                          , TypeNoun(..)
                           ) where
 
 import Data.Text as T
@@ -34,10 +36,20 @@ data Statement = Output { outputVerb :: OutputVerb
                         }
                | Declaration { declareVerb :: DeclareVerb
                              , declareName :: Variable
-                             , declareValue :: Literal
+                             , declareValue :: Value
                              , declareIsConsnant :: Bool
+                             , declareTypeArticle :: Maybe Article
+                             , declareTypeNoun :: TypeNoun
                              }
                deriving (Eq, Show)
+
+data Article = The | A | An deriving (Eq, Show)
+
+data TypeNoun = Number -- numbers
+              | Letter | Character -- character
+              | Word | Phrase | Sentence | Quote | Name -- string
+              | Logic | Argument  -- boolean
+              deriving (Eq, Show)
 
 data DeclareVerb = Is | Was | Has | Had | Like | Likes | Liked deriving (Eq, Show)
 
@@ -45,6 +57,7 @@ data OutputVerb = Sang | Wrote | Said | Thought deriving (Eq, Show)
 
 data Value = VLiteral { vLiteral :: Literal}
            | VVariable { vVariable :: Variable}
+           | VNull
   deriving (Eq, Show)
 
 newtype Variable = Variable { vName :: T.Text } deriving (Eq, Show)

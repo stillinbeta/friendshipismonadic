@@ -2,8 +2,10 @@
 
 module Language.Fim.Types.Print (PrettyPrintable(..)) where
 
+
 import Language.Fim.Types
 
+import Data.Maybe (isJust)
 import qualified Data.Text as T
 
 class PrettyPrintable p where
@@ -55,8 +57,39 @@ instance PrettyPrintable Statement where
       let verb = T.toLower . T.pack . show $ declareVerb d
           always = if declareIsConsnant d then " always" else "" in
         T.concat ["Did you know that ", prettyPrint $ declareName d
-                 , " ", verb, always, " ", prettyPrint $ declareValue d, "?\n"]
-    -- TODO: should exclude all reserved words
+                 , " ", verb, always, " "
+                 , printType (declareTypeArticle d) (declareTypeNoun d), " "
+                 , prettyPrint $ declareValue d, "?\n"]
+printType :: Maybe Article -> TypeNoun -> T.Text
+printType maybeArticle noun =
+  let pluralised = case noun of
+                     Logic -> "logic"
+                     _ -> T.concat [case noun of
+                                      Letter -> "letter"
+                                      Character -> "character"
+                                      Word -> "word"
+                                      Phrase -> "phrase"
+                                      Sentence -> "sentence"
+                                      Quote -> "quote"
+                                      Name -> "name"
+                                      Argument -> "argument"
+                                      Number -> "number"
+                                   , if isJust maybeArticle
+                                     then "" else "s"
+                                   ]
+      article = maybe "" ((`T.snoc` ' ') . prettyPrint) maybeArticle in
+    T.concat [article, pluralised]
+
+instance PrettyPrintable Article where
+  prettyPrint The = "the"
+  prettyPrint A   = "a"
+  prettyPrint An  = "an"
+
+
+
+
+
+
 
 instance PrettyPrintable Value where
   prettyPrint v@VLiteral{} = prettyPrint $ vLiteral v
