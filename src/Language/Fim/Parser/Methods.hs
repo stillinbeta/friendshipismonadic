@@ -11,7 +11,7 @@ import Data.Maybe (isJust)
 import qualified Data.Text as T
 import Text.Parsec (try, (<?>))
 import Text.Parsec.Text (Parser)
-import Text.Parsec.Char (string, space, newline, char)
+import Text.Parsec.Char (string, space, newline)
 import Text.Parsec.Combinator (many1, optionMaybe, manyTill)
 
 emptyLine :: Parser (Maybe Types.Function)
@@ -30,4 +30,4 @@ method = do
 methodEnd :: Types.Identifier -> Parser ()
 methodEnd idt =
   let name = T.unpack $ Types.idName idt in
-  void $ string "That's all about " >> string name >> char '!'
+  void $ string "That's all about " >> string name >> terminator

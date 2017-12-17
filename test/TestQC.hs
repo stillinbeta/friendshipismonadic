@@ -1,11 +1,9 @@
-{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE TemplateHaskell, OverloadedStrings #-}
 
 module Main where
 
 import Language.Fim
 import Language.Fim.Types
-import Language.Fim.Types.Print
-
 import Language.Fim.Parser.Tokens (reservedWordList)
 
 import Hedgehog
@@ -16,7 +14,17 @@ import Control.Monad (unless)
 import Control.Applicative ((<|>))
 import Data.Char (isDigit)
 import qualified Data.Text as T
+import Text.Show.Pretty (ppShow)
 import qualified System.Exit
+
+
+data WithText a = WithText { s :: a
+                           , p :: T.Text
+                           } deriving (Eq, Show)
+
+
+niceShow :: Show a => WithText a -> String
+niceShow w = "AST:\n" ++ ppShow (s w) ++ "\nLetter: \n" ++ T.unpack (p w)
 
 main :: IO ()
 main = do
@@ -25,39 +33,52 @@ main = do
 
 prop_parse :: Property
 prop_parse = property $ do
-  cls <- forAllWith (T.unpack . prettyPrint) genClass
+  cls <- forAllWith niceShow genClass
   -- cls <- forAll genClass
-  parse (prettyPrint cls) === Right cls
+  parse (p cls) === Right (s cls)
 
-genClass :: Gen Class
+genClass :: Gen (WithText Class)
 genClass = do
-  name <- genIdentifier
-  super <- genSuperClass
-  student <- genIdentifier
+  (WithText sName pName) <- genIdentifier
+  (WithText sSuper pSuper) <- genSuperClass
+  p1 <- genPunctuation
+  studentName <- genName
+  p2 <- genPunctuation
+
   body <- Gen.list (Range.linear 1 100) genFunction
-  return Class { className    = name
-               , classSuper   = super
-               , classBody    = body
-               , classStudent = student
-               }
+  return $ WithText
+    Class { className    = sName
+           , classSuper   = sSuper
+           , classBody    = map s body
+           }
+    (T.concat $ [ "Dear ", pSuper, ": ", pName, p1, "\n"]
+             ++ map p body
+             ++ ["Your faithful student, ", studentName, p2, "\n"])
 
-genSuperClass :: Gen Class
+genSuperClass :: Gen (WithText Class)
 genSuperClass =
-  Gen.constant Celestia <|> do ClassByName <$> genName
+  Gen.constant (WithText Celestia "Princess Celestia") <|> genClassByName
 
-genIdentifier :: Gen Identifier
-genIdentifier = do
+genClassByName :: Gen (WithText Class)
+genClassByName = do
   name <- genName
-  punctuation <- genTerminator
-  return Identifier { idName = name, idTerminator = punctuation }
+  return $ WithText (ClassByName name) name
 
-genTerminator :: Gen Terminator
-genTerminator = Gen.element [FullStop, Comma, QuestionMark, Exclamation]
+genPunctuation :: Gen T.Text
+genPunctuation = Gen.element [".", ",", "!", "?"]
+
+genIdentifier :: Gen (WithText Identifier)
+genIdentifier = do
+   name <- genName
+   return $ WithText (Identifier name) name
+
+-- genTerminator :: Gen Terminator
+-- genTerminator = Gen.element [FullStop, Comma, QuestionMark, Exclamation]
 
 genName :: Gen T.Text
 -- shrinks to Fluttershy, makes errors look a lil nicer :)
 genName = pure (T.pack "Fluttershy")
-  <|> Gen.text (Range.linear 1 100) (Gen.filter (not . isPunctuation) Gen.unicode)
+          <|> Gen.text (Range.linear 1 100) (Gen.filter (not . isPunctuation) Gen.unicode)
 
 isPunctuation :: Char -> Bool
 isPunctuation char = case char of
@@ -67,103 +88,160 @@ isPunctuation char = case char of
                        '?' -> True
                        _   -> False
 
-genFunction :: Gen Function
+genFunction :: Gen (WithText Function)
 genFunction = do
   name <- genIdentifier
   today <- Gen.bool_
+  p0 <- genPunctuation
+  p1 <- genPunctuation
   body <- Gen.list (Range.linear 0 100) genStatement
-  return Function { functionName = name
-                  , isMain = today
-                  , functionBody = body
-                  }
+  return $ WithText
+    Function { functionName = s name
+             , isMain = today
+             , functionBody = map s body
+             }
+    (T.concat $ [if today then "Today " else "", "I learned ", p name, p0, "\n"]
+             ++ map p body
+             ++ ["That's all about ", p name, p1, "\n"]
+    )
 
-genStatement :: Gen Statement
+genStatement :: Gen (WithText Statement)
 genStatement = Gen.choice [ genOutput
-                          , genDeclaration]
+                          , genDeclaration
+                          ]
 
-genOutput :: Gen Statement
+genOutput :: Gen (WithText Statement)
 genOutput = do
-  verb <- Gen.element [Sang, Wrote, Said, Thought]
+  verb <- Gen.element ["sang", "wrote", "said", "thought"]
   value <- genValue
-  terminator <- genTerminator
-  return Output { outputVerb = verb
-                , outputValue = value
-                , outputTerminator = terminator}
+  p0 <- genPunctuation
+  return $ WithText
+    Output { outputValue = s value }
+    (T.concat ["I ", verb, " ", p value, p0, "\n"])
 
-genDeclaration :: Gen Statement
+genDeclaration :: Gen (WithText Statement)
 genDeclaration = do
-  verb <- Gen.element [Is, Was, Has, Had, Like, Likes, Liked]
+  verb <- Gen.element ["is", "was", "has", "had", "like","likes", "liked"]
   name <- genVariable
   isConstant <- Gen.bool
-  typeArticle <- Just <$> genArticle
-  (value, typeNoun) <- genLiteralWithNoun
+  val <- Gen.choice [ genDeclarationNothingTyped
+                    , genDeclarationLiteralTyped
+                    , genDeclarationVariable
+                    ]
+  p0 <- genPunctuation
+  return $ WithText
+    Declaration { declareName = s name
+                , declareValue = s val
+                , declareIsConsnant = isConstant
+                }
+    (T.concat [ "Did you know that ", p name,
+               if isConstant then " always" else "", " ",
+               verb, " ", p val, p0, "\n"
+               ]
+    )
 
-  return Declaration { declareVerb = verb
-                     , declareName = name
-                     , declareValue = VLiteral value
-                     , declareIsConsnant = isConstant
-                     , declareTypeArticle = typeArticle
-                     , declareTypeNoun = typeNoun
-                     }
+genDeclarationNothingTyped :: Gen (WithText Value)
+genDeclarationNothingTyped = do
+  article <- Gen.element ["", "the ", "a "]
+  noun <- Gen.choice [genNumberNoun, genStringNoun, genCharNoun]
+  return $ WithText VNull (T.concat [article, noun])
+
+genDeclarationLiteralTyped :: Gen (WithText Value)
+genDeclarationLiteralTyped = do
+  article <- Gen.element ["", "the ", "a "]
+  lit <- genLiteral
+  noun <- case s lit of
+            NumberLiteral{} ->    genNumberNoun
+            StringLiteral{} ->    genStringNoun
+            CharacterLiteral{} -> genCharNoun
+  return $ WithText
+    VLiteral { vLiteral = s lit}
+    (T.concat [article , " ", noun, " ", p lit])
+
+genDeclarationVariable :: Gen (WithText Value)
+genDeclarationVariable = do
+  var <- genVariable
+  return $ WithText (VVariable $ s var) (p var)
+
+genNumberNoun :: Gen T.Text
+genNumberNoun = pure "number"
+
+genStringNoun :: Gen T.Text
+genStringNoun = Gen.element ["word", "phrase", "sentence", "quote", "name"]
+
+genCharNoun :: Gen T.Text
+genCharNoun = Gen.element ["letter", "character"]
 
 -- TODO: enforce a/an consistency
-genArticle :: Gen Article
-genArticle = Gen.element [The, A, An]
+genArticle :: Gen T.Text
+genArticle = Gen.element ["The", "A", "An"]
 
-genValue :: Gen Value
-genValue = Gen.choice [ VLiteral <$> genLiteral
-                      , VVariable <$> genVariable]
+genValue :: Gen (WithText Value)
+genValue = Gen.choice [ genVLiteral
+                      --, VVariable <$> genVariable
+                      ]
 
+genVLiteral :: Gen (WithText Value)
+genVLiteral = do
+  lit <- genLiteral
+  return $ WithText (VLiteral $ s lit) (p lit)
+
+--------------
 -- Literals --
+--------------
 
-genLiteral :: Gen Literal
+genLiteral :: Gen (WithText Literal)
 genLiteral = Gen.choice [ genCharacterLiteral
                         , genStringLiteral
                         , genNumberLiteral]
 
-genLiteralWithNoun :: Gen (Literal, TypeNoun)
-genLiteralWithNoun = do
-  literal <- genLiteral
-  noun <- case literal of
-    NumberLiteral{} -> pure Number
-    StringLiteral{} -> Gen.element [Word, Phrase, Sentence, Quote, Name]
-    CharacterLiteral{} -> Gen.element [Letter, Character]
-  return (literal, noun)
+genSingleQuote :: Gen (Char, Char)
+genSingleQuote = Gen.element [('\'', '\''), ('‘', '’')]
 
-genNumberLiteral :: Gen Literal
-genNumberLiteral = NumberLiteral <$> Gen.double (Range.linearFrac (-1000000) 1000000)
+genDoubleQuote :: Gen (Char, Char)
+genDoubleQuote = Gen.element [('"', '"'), ('“', '”')]
 
-genCharacterLiteral :: Gen Literal
+genNumberLiteral :: Gen (WithText Literal)
+genNumberLiteral = do
+  num <- Gen.double (Range.linearFrac (-1000000) 1000000)
+  return $ WithText
+    NumberLiteral {nlValue = num}
+    (T.pack . show $ num)
+
+genCharacterLiteral :: Gen (WithText Literal)
 genCharacterLiteral = do
-  char <- Gen.unicode
-  quote <- genQuote
-  return CharacterLiteral { clValue = char
-                          , clWrap = quote
-                          }
+   (open, close) <- genSingleQuote
+   char <- Gen.filter (/=close) Gen.unicode
+   return $ WithText
+     CharacterLiteral { clValue = char
+                      }
+     (T.pack [open, char, close])
 
-genStringLiteral :: Gen Literal
+genStringLiteral :: Gen (WithText Literal)
 genStringLiteral = do
-  quote <- genQuote
+  (open, close) <- genDoubleQuote
   -- We don't have escaping
-  let filterFunc = case quote of
-                     SimpleQuote -> (/='"')
-                     FancyQuote  -> (/='”')
+  let filterFunc = (/=close)
   val <- Gen.text (Range.linear 0 250) $ Gen.filter filterFunc Gen.unicode
-  return StringLiteral { slValue = val, slWrap = quote}
+  return $ WithText
+    StringLiteral { slValue = val}
+    (open `T.cons` val `T.snoc` close)
 
-genQuote :: Gen StringQuote
-genQuote = Gen.element [SimpleQuote, FancyQuote]
-
+---------------
 -- Variables --
+---------------
 
-genVariable :: Gen Variable
+genVariable :: Gen (WithText Variable)
 genVariable = do
   name <- Gen.filter isValidVariable genName
-  return Variable { vName = name }
+  return $ WithText Variable { vName = name } name
 
 isValidVariable :: T.Text -> Bool
 isValidVariable t =
   let t0 = T.head t in
-    (not (isDigit t0))
-    && (t0 `notElem` "\"‘“'-")
-    && (not $ all ((`T.isInfixOf`t) . T.pack . (' ':)) reservedWordList)
+    not (isDigit t0)
+    && t0 `notElem` invalidVariableHeadChars
+    && not (all ((`T.isInfixOf`t) . T.pack . (' ':)) reservedWordList)
+
+invalidVariableHeadChars :: [Char]
+invalidVariableHeadChars = "\"‘“'-"

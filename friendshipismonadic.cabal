@@ -71,5 +71,6 @@ test-suite fim-qc
            build-depends:       base >= 4.7 && < 5,
                                 friendshipismonadic,
                                 hedgehog == 0.5,
+                                pretty-show == 1.6.*,
                                 neat-interpolation == 0.3.*,
                                 text == 1.2.*
