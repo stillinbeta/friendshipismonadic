@@ -18,9 +18,8 @@ main = hspec $ do
       let program = [text|Dear Princess Celestia: Hello World!
                           Your faithful student, Twilight Sparkle.|]
 
-      let expected = Class (Identifier "Hello World" Exclamation)
+      let expected = Class (Identifier "Hello World")
                            Celestia []
-                           (Identifier "Twilight Sparkle" FullStop)
       Fim.parse program `shouldBe` Right expected
     it "should lex a class with one empty function" $ do
       let program = [text|Dear Princess Celestia: Hello World!
@@ -29,9 +28,9 @@ main = hspec $ do
                           That's all about something simple!
 
                           Your faithful student, Twilight Sparkle.|]
-      let expected = Class (Identifier "Hello World" Exclamation) Celestia [
-            Function (Identifier "something simple" FullStop) True []
-            ] (Identifier "Twilight Sparkle" FullStop)
+      let expected = Class (Identifier "Hello World" ) Celestia [
+            Function (Identifier "something simple") True []
+            ]
       Fim.parse program `shouldBe` Right expected
     it "should lex a simple hello world" $ do
       let program = [text|Dear Princess Celestia: Hello World!
@@ -42,15 +41,13 @@ main = hspec $ do
 
                           Your faithful student, Twilight Sparkle.
                          |]
-      let expected = Class (Identifier "Hello World" Exclamation) Celestia [
-            Function (Identifier "something simple" FullStop) True [
-                Output Said (
-                    VLiteral (StringLiteral "Hello, World!" FancyQuote )
+      let expected = Class (Identifier "Hello World") Celestia [
+            Function (Identifier "something simple") True [
+                Output (
+                    VLiteral (StringLiteral "Hello, World!")
                     )
-                    Exclamation
                 ]
-            ] (Identifier "Twilight Sparkle" FullStop)
-
+            ]
       Fim.parse program `shouldBe` Right expected
   describe "interpreter" $ do
     it "should output Hello Equestria" $ do
@@ -62,11 +59,11 @@ main = hspec $ do
         `shouldReturn` ("undefined variable Hello Equestria\n", Nothing)
     it "should output from variables" $ do
       let program =
-            wrapBoilerplate [text|Did you know that my greeting is the phrase “Hello, Equestria!”
+            wrapBoilerplate [text|Did you know that my greeting is “Hello, Equestria!”?
                                   I sang my greeting!
                                   |]
       hCapture [stderr] (Fim.run program)
-        `shouldReturn` ("undefined variable Hello Equestria\n", Nothing)
+        `shouldReturn` ("undefined variable my greeting\n", Nothing)
 
 
 

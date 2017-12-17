@@ -19,19 +19,11 @@ punctuation = ",.!?"
 identifier :: Parser Identifier
 identifier = do
   name <- pack <$> many1 (noneOf punctuation)
-  term <- terminator
-  return $ Identifier name term
+  terminator
+  return $ Identifier name
 
-terminator :: Parser Terminator
-terminator = do
-  punct <- oneOf punctuation <?> "punctuation"
-  case punct of
-    '.' -> return FullStop
-    ',' -> return Comma
-    '?' -> return QuestionMark
-    '!' -> return Exclamation
-    _ -> fail $ "unknown punctuation " ++ [punct]
-
+terminator :: Parser ()
+terminator = void (oneOf punctuation <?> "punctuation")
 
 reservedWords :: Parser ()
 -- try (space >> string Dear)

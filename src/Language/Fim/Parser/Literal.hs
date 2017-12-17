@@ -14,7 +14,7 @@ import Text.Parsec.Combinator (choice, many1, optionMaybe)
 literal :: Parser Types.Literal
 literal = choice [ nullLiteral <?> "null"
                  , charLiteral <?> "character literal"
-                 , numberLiteral <?> "number"
+                 , numberLiteral <?> "number literal"
                  , stringLiteral <?> "string literal"]
 
 nullLiteral :: Parser Types.Literal
@@ -40,22 +40,21 @@ charLiteral :: Parser Types.Literal
 charLiteral = do
   openQuote <- oneOf "‘'"
   value <- anyChar
-  (match, quoteType) <- case openQuote of
-        '\'' -> return ('\'' , Types.SimpleQuote)
-        '‘' -> return ('’' , Types.FancyQuote)
+  match <- case openQuote of
+        '\'' -> return '\''
+        '‘' -> return '’'
         _ -> fail $ "unexpected matched quote " ++ [openQuote]
   char match
   return Types.CharacterLiteral { Types.clValue = value
-                                , Types.clWrap = quoteType
                                 }
 
 stringLiteral :: Parser Types.Literal
 stringLiteral = do
   quote <- oneOf "\"“"
-  (match, quoteType) <- case quote of
-        '"' -> return ('"' , Types.SimpleQuote)
-        '“' -> return ('”' , Types.FancyQuote)
+  match <- case quote of
+        '"' -> return '"'
+        '“' -> return '”'
         _ -> fail $ "unexpected matched quote " ++ [quote]
   str <- T.pack <$> many (noneOf [match])
-  void $ char match
-  return $ Types.StringLiteral str quoteType
+  char match
+  return $ Types.StringLiteral str

@@ -9,13 +9,13 @@ import Control.Applicative ((<|>))
 import Control.Monad (void)
 import qualified Data.Text as T
 import Text.Parsec.Text (Parser)
-import Text.Parsec ((<?>), try)
+import Text.Parsec ((<?>))
 import Text.Parsec.Combinator (manyTill, lookAhead)
-import Text.Parsec.Char (anyChar, string)
+import Text.Parsec.Char (anyChar)
 
 value :: Parser Types.Value
-value = Types.VLiteral <$> literal
-        <|> Types.VVariable <$> variable <?> "variable"
+value =     (Types.VLiteral  <$> literal  <?> "literal")
+        <|> (Types.VVariable <$> variable <?> "variable")
 
 variable :: Parser Types.Variable
 variable =

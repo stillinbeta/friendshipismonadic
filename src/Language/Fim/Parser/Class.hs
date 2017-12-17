@@ -7,11 +7,12 @@ import qualified Language.Fim.Parser.Methods as Methods
 
 import Control.Applicative (many)
 import Control.Monad (void)
+import Data.Maybe (catMaybes)
 import qualified Data.Text as T
-import Text.Parsec (try, (<|>), (<?>))
+import Text.Parsec ((<|>), (<?>))
 import Text.Parsec.Text (Parser)
 import Text.Parsec.Char (string, newline, noneOf)
-import Text.Parsec.Combinator (choice, optionMaybe)
+import Text.Parsec.Combinator (choice, manyTill)
 
 fimClass :: Parser Types.Class
 fimClass = do
@@ -19,12 +20,11 @@ fimClass = do
   superclass <- fimSuperClass
   name <- string ": " >> identifier
   void newline
-  (funcs, student) <- classBody
+  funcs <- classBody
   --fimClassSignoff
   return Types.Class { Types.className = name
                      , Types.classSuper = superclass
                      , Types.classBody = funcs
-                     , Types.classStudent = student
                      }
 
 fimSuperClass :: Parser Types.Class
@@ -38,21 +38,15 @@ fimClassByName = do
   name <- T.pack <$> many (noneOf ":")
   return $ Types.ClassByName name
 
-fimClassSignoff :: Parser Types.Identifier
+fimClassSignoff :: Parser ()
 fimClassSignoff = do
   string "Your faithful student, " <?> "signoff (Your faithful student)"
-  student <- identifier
+  identifier
   void newline
-  return student
 
-classBody :: Parser ([Types.Function], Types.Identifier)
+classBody :: Parser [Types.Function]
 classBody = do
-  maybeStudent <- optionMaybe (try fimClassSignoff)
-  case maybeStudent of
-    Just student -> return ([], student)
-    Nothing -> do
-      maybeF <- (Methods.emptyLine <|> Methods.method) <?> "expected empty line or new method"
-      (fs, student) <- classBody
-      return $ case maybeF of
-                 Nothing -> (fs, student)
-                 Just f -> (f:fs, student)
+  body <- manyTill ((Methods.emptyLine <?> "empty line")
+                     <|> (Methods.method <?> "method"))
+          fimClassSignoff
+  return $ catMaybes body

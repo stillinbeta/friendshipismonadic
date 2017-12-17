@@ -20,7 +20,6 @@ library
         hs-source-dirs:      src
         exposed-modules:     Language.Fim
                              Language.Fim.Types
-                             Language.Fim.Types.Print
                              Language.Fim.Parser
                              -- TODO: move the reserved words list to a constants file
                              Language.Fim.Parser.Tokens

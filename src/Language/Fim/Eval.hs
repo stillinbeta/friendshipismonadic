@@ -47,7 +47,9 @@ evalStatement o@Output{} = do
   box <- case outputValue o of
            VVariable { vVariable = v } -> lookupVariable v
            VLiteral { vLiteral = lit } -> return $ boxLiteral lit
+           VNull -> return NullBox
   liftIO . putStrLn . printableLiteral $ box
+evalStatement _ = return ()
 
 lookupVariable :: (MonadState EvalState m, MonadError T.Text m) => Variable -> m ValueBox
 lookupVariable v= do
