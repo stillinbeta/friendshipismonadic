@@ -5,20 +5,16 @@ import qualified Language.Fim.Types as Types
 import qualified Data.Text as T
 import Data.Maybe (catMaybes)
 import Control.Applicative (many)
-import Control.Monad (void)
 import Text.Parsec (try, (<?>))
 import Text.Parsec.Text (Parser)
-import Text.Parsec.Char (oneOf, noneOf, string, digit, char, anyChar)
+import Text.Parsec.Char (oneOf, noneOf, digit, char, anyChar)
 import Text.Parsec.Combinator (choice, many1, optionMaybe)
 
 literal :: Parser Types.Literal
-literal = choice [ nullLiteral <?> "null"
-                 , charLiteral <?> "character literal"
+literal = choice [ charLiteral <?> "character literal"
                  , numberLiteral <?> "number literal"
-                 , stringLiteral <?> "string literal"]
-
-nullLiteral :: Parser Types.Literal
-nullLiteral = const Types.Null <$> string "null"
+                 , stringLiteral <?> "string literal"
+                 ]
 
 numberLiteral :: Parser Types.Literal
 numberLiteral = do

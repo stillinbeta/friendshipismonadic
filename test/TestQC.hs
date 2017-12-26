@@ -124,44 +124,50 @@ genDeclaration = do
   verb <- Gen.element ["is", "was", "has", "had", "like","likes", "liked"]
   name <- genVariable
   isConstant <- Gen.bool
-  val <- Gen.choice [ genDeclarationNothingTyped
-                    , genDeclarationLiteralTyped
-                    , genDeclarationVariable
-                    ]
-  p0 <- genPunctuation
+  (val, typ) <- Gen.choice [ genDeclarationNothingTyped
+                           , genDeclarationLiteralTyped
+                           , genDeclarationVariable
+                           ]
   return $ WithText
     Declaration { declareName = s name
                 , declareValue = s val
                 , declareIsConsnant = isConstant
+                , declareType = typ
                 }
-    (T.concat [ "Did you know that ", p name,
-               if isConstant then " always" else "", " ",
-               verb, " ", p val, p0, "\n"
+    (T.concat [ "Did you know that ", p name, " ", verb,
+               if isConstant then " always " else " ",
+               p val, "?\n"
                ]
     )
 
-genDeclarationNothingTyped :: Gen (WithText Value)
+genDeclarationNothingTyped :: Gen (WithText Value, Maybe Type)
 genDeclarationNothingTyped = do
   article <- Gen.element ["", "the ", "a "]
-  noun <- Gen.choice [genNumberNoun, genStringNoun, genCharNoun]
-  return $ WithText VNull (T.concat [article, noun])
+  (gen, typ) <- Gen.choice [ pure (genNumberNoun, TNumber)
+                           , pure (genStringNoun, TString)
+                           , pure (genCharNoun, TCharacter)
+                           ]
+  noun <- gen
+  return (WithText VNull $ T.concat [article, noun], Just typ)
 
-genDeclarationLiteralTyped :: Gen (WithText Value)
+genDeclarationLiteralTyped :: Gen (WithText Value, Maybe Type)
 genDeclarationLiteralTyped = do
   article <- Gen.element ["", "the ", "a "]
   lit <- genLiteral
-  noun <- case s lit of
-            NumberLiteral{} ->    genNumberNoun
-            StringLiteral{} ->    genStringNoun
-            CharacterLiteral{} -> genCharNoun
-  return $ WithText
-    VLiteral { vLiteral = s lit}
-    (T.concat [article , " ", noun, " ", p lit])
+  let (gen, typ) = case s lit of
+            NumberLiteral{} ->    (genNumberNoun, pure TNumber)
+            StringLiteral{} ->    (genStringNoun, pure TString)
+            CharacterLiteral{} -> (genCharNoun, pure TCharacter)
+  noun <- gen
+  return (WithText
+          VLiteral { vLiteral = s lit}
+          (T.concat [article , noun, " ", p lit])
+         , typ)
 
-genDeclarationVariable :: Gen (WithText Value)
+genDeclarationVariable :: Gen (WithText Value, Maybe Type)
 genDeclarationVariable = do
   var <- genVariable
-  return $ WithText (VVariable $ s var) (p var)
+  return (WithText (VVariable $ s var) (p var), Nothing)
 
 genNumberNoun :: Gen T.Text
 genNumberNoun = pure "number"
@@ -237,11 +243,12 @@ genVariable = do
   return $ WithText Variable { vName = name } name
 
 isValidVariable :: T.Text -> Bool
-isValidVariable t =
-  let t0 = T.head t in
-    not (isDigit t0)
-    && t0 `notElem` invalidVariableHeadChars
-    && not (all ((`T.isInfixOf`t) . T.pack . (' ':)) reservedWordList)
+isValidVariable t
+  | isDigit t0 = False
+  | t0 `elem`  invalidVariableHeadChars = False
+  | all ((`T.isInfixOf`t) . T.pack . (' ':)) reservedWordList = False
+  | otherwise = True
+  where t0 = T.head t
 
 invalidVariableHeadChars :: [Char]
 invalidVariableHeadChars = "\"‘“'-"

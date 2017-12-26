@@ -7,6 +7,7 @@ import Language.Fim.Types
 import Language.Fim.Eval.Types (ValueBox(..), boxLiteral)
 
 import Prelude hiding (putStrLn)
+import Control.Applicative (empty)
 import Control.Monad.State.Class
 import Control.Monad.State (runStateT)
 import Control.Monad.Error.Class
@@ -17,7 +18,7 @@ import qualified Data.Text as T
 import Data.Text.IO (putStrLn, hPutStrLn)
 import System.IO (stderr)
 
-data EvalState = EvalState { variables :: (Map.Map T.Text ValueBox)
+data EvalState = EvalState { variables :: Map.Map T.Text ValueBox
                            }
 
 newEvalState :: EvalState
@@ -44,12 +45,33 @@ evalMainMethod mthd = mapM_ evalStatement $ functionBody mthd
 
 evalStatement :: (MonadState EvalState m, MonadError T.Text m, MonadIO m) => Statement -> m ()
 evalStatement o@Output{} = do
-  box <- case outputValue o of
-           VVariable { vVariable = v } -> lookupVariable v
-           VLiteral { vLiteral = lit } -> return $ boxLiteral lit
-           VNull -> return NullBox
+  box <- getValue $ outputValue o
   liftIO . putStrLn . printableLiteral $ box
-evalStatement _ = return ()
+evalStatement d@Declaration{} = do
+  box <- getValue $ declareValue d
+  -- TODO: hang on to version information
+  case (box, declareType d) of
+    (_, Nothing) -> return ()
+    (NumberBox{}, Just TNumber) -> return ()
+    (StringBox{}, Just TString) -> return ()
+    (CharacterBox{}, Just TCharacter) -> return ()
+    (NullBox, _) -> return ()
+    (_, Just{}) -> throwError $ T.concat ["Unexpected type for variable ",
+                                                   vName . declareName $ d]
+  -- TODO: handle constants
+  setValue (declareName d) box
+
+setValue :: MonadState EvalState m => Variable -> ValueBox -> m ()
+setValue var val= do
+  m <- gets variables
+  let m' = Map.insert (vName var) val m
+  modify $ \s -> s { variables = m' }
+
+getValue :: (MonadState EvalState m, MonadError T.Text m) => Value -> m ValueBox
+getValue v = case v of
+               VVariable { vVariable = var } -> lookupVariable var
+               VLiteral { vLiteral = lit } -> return $ boxLiteral lit
+               VNull -> return NullBox
 
 lookupVariable :: (MonadState EvalState m, MonadError T.Text m) => Variable -> m ValueBox
 lookupVariable v= do

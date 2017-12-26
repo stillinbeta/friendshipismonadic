@@ -6,6 +6,7 @@ module Language.Fim.Types ( Class(..)
                           , StringQuote(..)
                           , Identifier(..)
                           , Variable(..)
+                          , Type(..)
                           ) where
 
 import Data.Text as T
@@ -24,11 +25,15 @@ data Function = Function { functionName :: Identifier
                          , functionBody :: [Statement]
                          } deriving (Eq, Show)
 
+
+data Type = TNumber | TString | TCharacter deriving (Eq, Show)
+
 data Statement = Output { outputValue :: Value
                         }
                | Declaration { declareName :: Variable
                              , declareValue :: Value
                              , declareIsConsnant :: Bool
+                             , declareType :: Maybe Type
                              }
                deriving (Eq, Show)
 
@@ -37,22 +42,22 @@ data Value = VLiteral { vLiteral :: Literal}
            | VNull
   deriving (Eq, Show)
 
-newtype Variable = Variable { vName :: T.Text } deriving (Eq, Show)
 
--- TODO: Literals can be prefixed with 'the word,' 'the number,' etc
+newtype Variable = Variable { vName :: T.Text
+                            } deriving (Eq, Show)
+
+
 data Literal = StringLiteral { slValue :: T.Text
-                             -- TODO: wrapping quotes don't have to be the same
                              }
              | NumberLiteral { nlValue :: Double} -- TODO: Supposed to be Float64
              | CharacterLiteral { clValue :: Char
                                 }
-             | Null deriving Show
+             deriving Show
 
 -- Manually define Eq so our tests don't barf on the doubles
 instance Eq Literal where
   (StringLiteral val1) == (StringLiteral val2) = val1 == val2
   (CharacterLiteral val1) == (CharacterLiteral val2) = val1 == val2
-  Null == Null = True
   (NumberLiteral n1) == (NumberLiteral n2) = abs (n1 - n2) < 0.00000001
   _ == _ = False
 

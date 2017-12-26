@@ -45,12 +45,6 @@ executable fim
                         text == 1.2.*,
                         friendshipismonadic
 
-
--- executable fim
---   main-is:             Main.hs
---   default-language:    Haskell2010
---                        transformers == 0.5.*
-
 test-suite fim-hspec
            type: exitcode-stdio-1.0
            default-language:    Haskell2010

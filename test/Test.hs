@@ -59,11 +59,10 @@ main = hspec $ do
         `shouldReturn` ("undefined variable Hello Equestria\n", Nothing)
     it "should output from variables" $ do
       let program =
-            wrapBoilerplate [text|Did you know that my greeting is “Hello, Equestria!”?
+            wrapBoilerplate [text|Did you know that my greeting is the phrase “Hello, Equestria!”?
                                   I sang my greeting!
                                   |]
-      hCapture [stderr] (Fim.run program)
-        `shouldReturn` ("undefined variable my greeting\n", Nothing)
+      capture (Fim.run program) `shouldReturn` ("Hello, Equestria!\n", Nothing)
 
 
 

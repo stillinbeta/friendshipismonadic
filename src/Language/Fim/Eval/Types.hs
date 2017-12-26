@@ -19,4 +19,3 @@ boxLiteral literal = case literal of
   StringLiteral    {slValue = s} -> StringBox s
   NumberLiteral    {nlValue = d} -> NumberBox d
   CharacterLiteral {clValue = c} -> CharacterBox c
-  Null -> NullBox
