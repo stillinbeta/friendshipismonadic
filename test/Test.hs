@@ -55,15 +55,54 @@ main = hspec $ do
       capture (Fim.run program) `shouldReturn` ("Hello, Equestria!\n", Nothing)
     it "should throw errors for unknown variables" $ do
       let program = wrapBoilerplate "I sang Hello Equestria!\n"
-      hCapture [stderr] (Fim.run program)
-        `shouldReturn` ("undefined variable Hello Equestria\n", Nothing)
+      Fim.run program `shouldOutputToStderr` "undefined variable Hello Equestria\n"
     it "should output from variables" $ do
-      let program =
-            wrapBoilerplate [text|Did you know that my greeting is the phrase “Hello, Equestria!”?
-                                  I sang my greeting!
-                                  |]
-      capture (Fim.run program) `shouldReturn` ("Hello, Equestria!\n", Nothing)
+      let program = wrapBoilerplate
+            [text|Did you know that my greeting is the phrase “Hello, Equestria!”?
+                 I sang my greeting!
+                 |]
+      Fim.run program `shouldOutput` "Hello, Equestria!\n"
+    describe "assigning to variables" $ do
+      it "should output from redefined variables" $ do
+        let program = wrapBoilerplate
+              [text|Did you know that My greeting is a phrase?
+                    My greeting is now “Hello, Equestria!”.
+                    I said My greeting.
+                  |]
+        Fim.run program `shouldOutput` "Hello, Equestria!\n"
+      it "should error on assigning to constants" $ do
+        let program = wrapBoilerplate
+              [text|Did you know that Applejack is always the number 17?
+                    Applejack becomes 18!
+                   |]
+        Fim.run program `shouldOutputToStderr` "can't redefine constant Applejack\n"
+      it "should error on assigning to undefined variables" $ do
+        let program = wrapBoilerplate [text|Fluttershy is now the number 12.|]
+        Fim.run program `shouldOutputToStderr` "Undefined variable Fluttershy\n"
+      it "should error when assigning mixed types" $ do
+        let program = wrapBoilerplate
+              [text|Did you know that Applejack is the number 17?
+                    Applejack becomes "A string"!
+                   |]
+        Fim.run program `shouldOutputToStderr`
+          "Can't assign string to variable Applejack of type number\n"
+      it "should transfer types across variable declarations" $ do
+        let program = wrapBoilerplate
+              [text|Did you know that Applejack is the letter 'a'?
+                    Did you know that Mare Do Well is Applejack?
+                    Mare Do Well is now "Pinkie Pie"!
+                   |]
+        Fim.run program `shouldOutputToStderr`
+          "Can't assign string to variable Mare Do Well of type character\n"
 
+
+shouldOutput :: IO (Maybe String) -> String -> Expectation
+shouldOutput io str =
+  capture io `shouldReturn` (str, Nothing)
+
+shouldOutputToStderr :: IO (Maybe String) -> String -> Expectation
+shouldOutputToStderr io str =
+  hCapture [stderr] io `shouldReturn` (str, Nothing)
 
 
 wrapBoilerplate :: T.Text -> T.Text

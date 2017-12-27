@@ -1,10 +1,16 @@
 module Language.Fim.Eval.Types ( ValueBox(..)
+                               , VariableBox(..)
                                , boxLiteral
                                ) where
 
-import Language.Fim.Types (Literal(..))
+import Language.Fim.Types (Literal(..), Type)
 
 import qualified Data.Text as T
+
+data VariableBox = VariableBox { vboxValue      :: ValueBox
+                               , vboxIsConstant :: Bool
+                               , vboxType       :: Maybe Type
+                               }
 
 data ValueBox = NumberBox Double
               | ArrayBox [ValueBox]
