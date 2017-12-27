@@ -39,6 +39,7 @@ reservedWordList = [ "Dear"
                    , "always"
                    -- declare verbs
                    , "is"
+                   , "are"
                    , "was"
                    , "has"
                    , "had"
@@ -50,4 +51,8 @@ reservedWordList = [ "Dear"
                    , "wrote"
                    , "said"
                    , "thought"
+                   -- modification verbs
+                   , "now"
+                   , "become"
+                   , "becomes"
                    ]

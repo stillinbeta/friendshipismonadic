@@ -10,6 +10,7 @@ import Hedgehog
 import qualified Hedgehog.Gen as Gen
 import qualified Hedgehog.Range as Range
 
+import Text.Printf (printf)
 import Control.Monad (unless)
 import Control.Applicative ((<|>))
 import Data.Char (isDigit)
@@ -108,6 +109,7 @@ genFunction = do
 genStatement :: Gen (WithText Statement)
 genStatement = Gen.choice [ genOutput
                           , genDeclaration
+                          , genAssignment
                           ]
 
 genOutput :: Gen (WithText Statement)
@@ -139,6 +141,24 @@ genDeclaration = do
                p val, "?\n"
                ]
     )
+
+genAssignment :: Gen (WithText Statement)
+genAssignment = do
+  var <- genVariable
+  val <- genValue
+  statement <- Gen.element [ "is now"
+                           , "are now"
+                           , "now like"
+                           , "now likes"
+                           , "becomes"
+                           , "become"
+                           ]
+  p0 <- genPunctuation
+  return $ WithText
+    Assignment { assignmentName = s var
+               , assignmentValue = s val
+               }
+    (T.concat [ p var, " ", statement, " ", p val, p0, "\n"])
 
 genDeclarationNothingTyped :: Gen (WithText Value, Maybe Type)
 genDeclarationNothingTyped = do
@@ -212,7 +232,8 @@ genNumberLiteral = do
   num <- Gen.double (Range.linearFrac (-1000000) 1000000)
   return $ WithText
     NumberLiteral {nlValue = num}
-    (T.pack . show $ num)
+    -- printf to avoid exponent
+    (T.pack $ printf "%-.9G" num)
 
 genCharacterLiteral :: Gen (WithText Literal)
 genCharacterLiteral = do

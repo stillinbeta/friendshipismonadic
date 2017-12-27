@@ -35,6 +35,9 @@ data Statement = Output { outputValue :: Value
                              , declareIsConsnant :: Bool
                              , declareType :: Maybe Type
                              }
+               | Assignment { assignmentName :: Variable
+                            , assignmentValue :: Value
+                            }
                deriving (Eq, Show)
 
 data Value = VLiteral { vLiteral :: Literal}

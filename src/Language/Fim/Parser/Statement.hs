@@ -7,14 +7,18 @@ import Language.Fim.Parser.Literal (literal)
 
 import Control.Monad (void)
 import Data.Maybe (isJust)
-import Text.Parsec ((<?>), try)
+import Text.Parsec ((<?>), (<|>), try)
 import Text.Parsec.Text (Parser)
 import Text.Parsec.Combinator (choice, optionMaybe, optional)
 import Text.Parsec.Char (string, space, newline, char)
 
 statement :: Parser Types.Statement
-statement = choice [output, declaration] <?> "statement"
+statement = choice [ output
+                   , declaration
+                   , assignment
+                   ] <?> "statement"
 
+-- output --
 
 output :: Parser Types.Statement
 output = do
@@ -34,13 +38,15 @@ outputVerb = void $
          , string "wrote"
          ]
 
+-- Declaration --
+
 declaration :: Parser Types.Statement
 declaration = do
   void $ string "Did you know that "
   var <- variable
-  space
+  space <?> "declaration variable space"
   declarationVerb
-  space
+  space <?> "declaration verb space"
   isConstant <- constant
   (typ, val) <- choice [ declarationTyped
                        , declarationVariable]
@@ -97,3 +103,22 @@ constant = do
     try $ string "always"
     space
   return $ isJust val
+
+-- Assignment --
+
+assignment :: Parser Types.Statement
+assignment = do
+  var <- variable <?> "variable"
+  space <?> "assignment variable"
+  choice [ try (string "becomes")
+         , string "become"
+         , (string "is" <|> string "are") >> space >> string "now"
+         , string "now" >> space >> (try (string "likes") <|> string "like")
+         ] <?> "assignment"
+  space <?> "assignment space"
+  val <- value <?> "value"
+  terminator
+  newline
+  return Types.Assignment { Types.assignmentName = var
+                          , Types.assignmentValue = val
+                          }
