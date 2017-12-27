@@ -23,7 +23,6 @@ data WithText a = WithText { s :: a
                            , p :: T.Text
                            } deriving (Eq, Show)
 
-
 niceShow :: Show a => WithText a -> String
 niceShow w = "AST:\n" ++ ppShow (s w) ++ "\nLetter: \n" ++ T.unpack (p w)
 
@@ -115,37 +114,37 @@ genStatement = Gen.choice [ genOutput
 genOutput :: Gen (WithText Statement)
 genOutput = do
   verb <- Gen.element ["sang", "wrote", "said", "thought"]
-  value <- genValue
+  expr <- genExpr
   p0 <- genPunctuation
   return $ WithText
-    Output { outputValue = s value }
-    (T.concat ["I ", verb, " ", p value, p0, "\n"])
+    Output { outputExpr = s expr }
+    (T.concat ["I ", verb, " ", p expr, p0, "\n"])
 
 genDeclaration :: Gen (WithText Statement)
 genDeclaration = do
   verb <- Gen.element ["is", "was", "has", "had", "like","likes", "liked"]
   name <- genVariable
   isConstant <- Gen.bool
-  (val, typ) <- Gen.choice [ genDeclarationNothingTyped
+  (expr, typ) <- Gen.choice [ genDeclarationNothingTyped
                            , genDeclarationLiteralTyped
                            , genDeclarationVariable
                            ]
   return $ WithText
     Declaration { declareName = s name
-                , declareValue = s val
+                , declareExpr = s expr
                 , declareIsConsnant = isConstant
                 , declareType = typ
                 }
     (T.concat [ "Did you know that ", p name, " ", verb,
                if isConstant then " always " else " ",
-               p val, "?\n"
+               p expr, "?\n"
                ]
     )
 
 genAssignment :: Gen (WithText Statement)
 genAssignment = do
   var <- genVariable
-  val <- genValue
+  expr <- genExpr
   statement <- Gen.element [ "is now"
                            , "are now"
                            , "now like"
@@ -156,11 +155,11 @@ genAssignment = do
   p0 <- genPunctuation
   return $ WithText
     Assignment { assignmentName = s var
-               , assignmentValue = s val
+               , assignmentExpr = s expr
                }
-    (T.concat [ p var, " ", statement, " ", p val, p0, "\n"])
+    (T.concat [ p var, " ", statement, " ", p expr, p0, "\n"])
 
-genDeclarationNothingTyped :: Gen (WithText Value, Maybe Type)
+genDeclarationNothingTyped :: Gen (WithText (Maybe Expression), Maybe Type)
 genDeclarationNothingTyped = do
   article <- Gen.element ["", "the ", "a "]
   (gen, typ) <- Gen.choice [ pure (genNumberNoun, TNumber)
@@ -168,9 +167,9 @@ genDeclarationNothingTyped = do
                            , pure (genCharNoun, TCharacter)
                            ]
   noun <- gen
-  return (WithText VNull $ T.concat [article, noun], Just typ)
+  return (WithText Nothing $ T.concat [article, noun], Just typ)
 
-genDeclarationLiteralTyped :: Gen (WithText Value, Maybe Type)
+genDeclarationLiteralTyped :: Gen (WithText (Maybe Expression), Maybe Type)
 genDeclarationLiteralTyped = do
   article <- Gen.element ["", "the ", "a "]
   lit <- genLiteral
@@ -180,14 +179,14 @@ genDeclarationLiteralTyped = do
             CharacterLiteral{} -> (genCharNoun, pure TCharacter)
   noun <- gen
   return (WithText
-          VLiteral { vLiteral = s lit}
+          (Just ELiteral { eLiteral = s lit})
           (T.concat [article , noun, " ", p lit])
          , typ)
 
-genDeclarationVariable :: Gen (WithText Value, Maybe Type)
+genDeclarationVariable :: Gen (WithText (Maybe Expression), Maybe Type)
 genDeclarationVariable = do
   var <- genVariable
-  return (WithText (VVariable $ s var) (p var), Nothing)
+  return (WithText (Just . EVariable $ s var) (p var), Nothing)
 
 genNumberNoun :: Gen T.Text
 genNumberNoun = pure "number"
@@ -202,15 +201,15 @@ genCharNoun = Gen.element ["letter", "character"]
 genArticle :: Gen T.Text
 genArticle = Gen.element ["The", "A", "An"]
 
-genValue :: Gen (WithText Value)
-genValue = Gen.choice [ genVLiteral
+genExpr :: Gen (WithText Expression)
+genExpr = Gen.choice [ genVLiteral
                       --, VVariable <$> genVariable
                       ]
 
-genVLiteral :: Gen (WithText Value)
+genVLiteral :: Gen (WithText Expression)
 genVLiteral = do
   lit <- genLiteral
-  return $ WithText (VLiteral $ s lit) (p lit)
+  return $ WithText (ELiteral $ s lit) (p lit)
 
 --------------
 -- Literals --

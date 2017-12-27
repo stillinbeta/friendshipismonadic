@@ -44,7 +44,7 @@ main = hspec $ do
       let expected = Class (Identifier "Hello World") Celestia [
             Function (Identifier "something simple") True [
                 Output (
-                    VLiteral (StringLiteral "Hello, World!")
+                    ELiteral (StringLiteral "Hello, World!")
                     )
                 ]
             ]

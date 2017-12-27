@@ -1,7 +1,7 @@
 module Language.Fim.Types ( Class(..)
                           , Function(..)
                           , Statement(..)
-                          , Value(..)
+                          , Expression(..)
                           , Literal(..)
                           , StringQuote(..)
                           , Identifier(..)
@@ -28,21 +28,20 @@ data Function = Function { functionName :: Identifier
 
 data Type = TNumber | TString | TCharacter deriving (Eq, Show)
 
-data Statement = Output { outputValue :: Value
+data Statement = Output { outputExpr :: Expression
                         }
                | Declaration { declareName :: Variable
-                             , declareValue :: Value
+                             , declareExpr :: Maybe Expression
                              , declareIsConsnant :: Bool
                              , declareType :: Maybe Type
                              }
                | Assignment { assignmentName :: Variable
-                            , assignmentValue :: Value
+                            , assignmentExpr :: Expression
                             }
                deriving (Eq, Show)
 
-data Value = VLiteral { vLiteral :: Literal}
-           | VVariable { vVariable :: Variable}
-           | VNull
+data Expression = ELiteral { eLiteral :: Literal}
+           | EVariable { eVariable :: Variable}
   deriving (Eq, Show)
 
 

@@ -2,7 +2,7 @@ module Language.Fim.Parser.Statement (statement) where
 
 import qualified Language.Fim.Types as Types
 import Language.Fim.Parser.Tokens (terminator)
-import Language.Fim.Parser.Value (value, variable)
+import Language.Fim.Parser.Expression (expression, variable)
 import Language.Fim.Parser.Literal (literal)
 
 import Control.Monad (void)
@@ -25,10 +25,10 @@ output = do
   void $ string "I "
   outputVerb
   void space
-  val <- value
+  expr <- expression
   terminator
   void newline
-  return $ Types.Output val
+  return $ Types.Output expr
 
 outputVerb :: Parser ()
 outputVerb = void $
@@ -48,12 +48,12 @@ declaration = do
   declarationVerb
   space <?> "declaration verb space"
   isConstant <- constant
-  (typ, val) <- choice [ declarationTyped
+  (typ, expr) <- choice [ declarationTyped
                        , declarationVariable]
   char '?'
   newline
   return Types.Declaration { Types.declareName = var
-                           , Types.declareValue = val
+                           , Types.declareExpr = expr
                            , Types.declareIsConsnant = isConstant
                            , Types.declareType = typ
                            }
@@ -68,17 +68,17 @@ declarationVerb = void $ choice [ string "is"
                                 , string "like"
                                 ]
 
-declarationTyped :: Parser (Maybe Types.Type, Types.Value)
+declarationTyped :: Parser (Maybe Types.Type, Maybe Types.Expression)
 declarationTyped = do
   declarationOptionalArticle
   typ <- declarationType
   val <- optionMaybe $ space >> literal
-  return (Just typ, maybe Types.VNull Types.VLiteral val)
+  return (Just typ, Types.ELiteral <$> val)
 
-declarationVariable :: Parser (Maybe Types.Type, Types.Value)
+declarationVariable :: Parser (Maybe Types.Type, Maybe Types.Expression)
 declarationVariable = do
   var <- variable
-  return (Nothing, Types.VVariable var)
+  return (Nothing, Just $ Types.EVariable var)
 
 declarationOptionalArticle :: Parser ()
 declarationOptionalArticle = optional $ choice [ try $ string "the "
@@ -116,9 +116,9 @@ assignment = do
          , string "now" >> space >> (try (string "likes") <|> string "like")
          ] <?> "assignment"
   space <?> "assignment space"
-  val <- value <?> "value"
+  expr <- expression <?> "expression"
   terminator
   newline
   return Types.Assignment { Types.assignmentName = var
-                          , Types.assignmentValue = val
+                          , Types.assignmentExpr = expr
                           }

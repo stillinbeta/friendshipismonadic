@@ -1,5 +1,6 @@
-module Language.Fim.Parser.Value (value
-                                 , variable) where
+module Language.Fim.Parser.Expression (expression
+                                      , variable
+                                      ) where
 
 import qualified Language.Fim.Types as Types
 import Language.Fim.Parser.Literal (literal)
@@ -13,9 +14,9 @@ import Text.Parsec ((<?>))
 import Text.Parsec.Combinator (manyTill, lookAhead)
 import Text.Parsec.Char (anyChar)
 
-value :: Parser Types.Value
-value =     (Types.VLiteral  <$> literal  <?> "literal")
-        <|> (Types.VVariable <$> variable <?> "variable")
+expression :: Parser Types.Expression
+expression =  (Types.ELiteral  <$> literal  <?> "literal")
+          <|> (Types.EVariable <$> variable <?> "variable")
 
 variable :: Parser Types.Variable
 variable =
