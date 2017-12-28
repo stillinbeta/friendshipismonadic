@@ -14,7 +14,6 @@ cabal-version:       >=1.10
 extra-source-files:  README.md
 
 
-
 library
         default-language:    Haskell2010
         hs-source-dirs:      src
@@ -25,6 +24,8 @@ library
                              Language.Fim.Parser.Tokens
                              Language.Fim.Eval
         other-modules:       Language.Fim.Eval.Types
+                             Language.Fim.Lexer
+                             Language.Fim.Lexer.Token
                              Language.Fim.Parser.Class
                              Language.Fim.Parser.Statement
                              Language.Fim.Parser.Methods

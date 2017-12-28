@@ -1,33 +1,27 @@
 module Language.Fim.Parser.Tokens (terminator
                                   , identifier
-                                  , reservedWords
                                   , reservedWordList
                                   ) where
 
-import Language.Fim.Types
+import qualified Data.Text as T
+import qualified Language.Fim.Lexer.Token as Token
+import Language.Fim.Parser.Util (Parser, token_, token)
 
-import Control.Monad (void)
-import Data.Text (pack)
-import Text.Parsec ((<?>), try)
-import Text.Parsec.Text (Parser)
-import Text.Parsec.Char (noneOf, oneOf, string, space)
-import Text.Parsec.Combinator (many1, choice)
+import Text.Parsec.Combinator (choice)
 
-punctuation :: String
-punctuation = ",.!?"
-
-identifier :: Parser Identifier
+identifier :: Parser T.Text
 identifier = do
-  name <- pack <$> many1 (noneOf punctuation)
-  terminator
-  return $ Identifier name
+  Token.Identifier name <- token Token.tIdentifier
+  return  name
 
 terminator :: Parser ()
-terminator = void (oneOf punctuation <?> "punctuation")
-
-reservedWords :: Parser ()
--- try (space >> string Dear)
-reservedWords = void $ choice $ map (try . (space>>) . string) reservedWordList
+terminator = choice [ token_ Token.FullStop
+                    , token_ Token.ExclamationPoint
+                    , token_ Token.QuestionMark
+                    , token_ Token.Interrobang
+                    , token_ Token.Ellipsis
+                    , token_ Token.Colon
+                    ]
 
 reservedWordList :: [String]
 reservedWordList = [ "Dear"

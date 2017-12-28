@@ -31,7 +31,8 @@ genClass = do
   studentName <- genName
   p2 <- genPunctuation
 
-  body <- Gen.list (Range.linear 1 100) genFunction
+  -- body <- Gen.list (Range.linear 1 100) genFunction
+  let body = []
   return $ WithText
     Class { className    = sName
            , classSuper   = sSuper
@@ -51,7 +52,7 @@ genClassByName = do
   return $ WithText (ClassByName name) name
 
 genPunctuation :: Gen T.Text
-genPunctuation = Gen.element [".", ",", "!", "?"]
+genPunctuation = T.singleton <$> Gen.element ".!?‽…:"
 
 genIdentifier :: Gen (WithText Identifier)
 genIdentifier = do

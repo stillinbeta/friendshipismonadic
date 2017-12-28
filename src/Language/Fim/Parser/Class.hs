@@ -1,52 +1,49 @@
 module Language.Fim.Parser.Class (fimClass) where
 
 import qualified Language.Fim.Types as Types
-
-import Language.Fim.Parser.Tokens (identifier)
-import qualified Language.Fim.Parser.Methods as Methods
+import Language.Fim.Parser.Tokens (identifier, terminator)
+import Language.Fim.Parser.Util (Parser, token, token_)
+import qualified Language.Fim.Lexer.Token as Token
+-- import qualified Language.Fim.Parser.Methods as Methods
 
 import Control.Applicative (many)
 import Control.Monad (void)
 import Data.Maybe (catMaybes)
 import qualified Data.Text as T
 import Text.Parsec ((<|>), (<?>))
-import Text.Parsec.Text (Parser)
-import Text.Parsec.Char (string, newline, noneOf)
 import Text.Parsec.Combinator (choice, manyTill)
 
 fimClass :: Parser Types.Class
 fimClass = do
-  string "Dear " <?> "salutation"
-  superclass <- fimSuperClass
-  name <- string ": " >> identifier
-  void newline
-  funcs <- classBody
-  --fimClassSignoff
+  token_ Token.ClassStart
+  superclass <- fimSuperClass <$> identifier
+  token_ Token.Colon
+  name <- Types.Identifier <$> identifier
+  terminator
+  token_ Token.Newline
+  -- funcs <- classBody
+  fimClassSignoff
   return Types.Class { Types.className = name
                      , Types.classSuper = superclass
-                     , Types.classBody = funcs
+                     , Types.classBody = []
                      }
 
-fimSuperClass :: Parser Types.Class
-fimSuperClass = choice [fimClassCelestia, fimClassByName]
-
-fimClassCelestia :: Parser Types.Class
-fimClassCelestia = string "Princess Celestia" >> return Types.Celestia
-
-fimClassByName :: Parser Types.Class
-fimClassByName = do
-  name <- T.pack <$> many (noneOf ":")
-  return $ Types.ClassByName name
+fimSuperClass :: T.Text -> Types.Class
+fimSuperClass id =
+  if id == T.pack "Princess Celestia"
+  then Types.Celestia
+  else Types.ClassByName id
 
 fimClassSignoff :: Parser ()
 fimClassSignoff = do
-  string "Your faithful student, " <?> "signoff (Your faithful student)"
-  identifier
-  void newline
+  token_ Token.ClassEnd
+  token_ Token.tIdentifier
+  terminator
+  token_ Token.Newline
 
-classBody :: Parser [Types.Function]
-classBody = do
-  body <- manyTill ((Methods.emptyLine <?> "empty line")
-                     <|> (Methods.method <?> "method"))
-          fimClassSignoff
-  return $ catMaybes body
+-- classBody :: Parser [Types.Function]
+-- classBody = do
+--   body <- manyTill ((Methods.emptyLine <?> "empty line")
+--                      <|> (Methods.method <?> "method"))
+--           fimClassSignoff
+--   return $ catMaybes body

@@ -3,7 +3,7 @@ module Language.Fim.Parser.Methods (method
                           ) where
 
 import qualified Language.Fim.Types as Types
-import Language.Fim.Parser.Tokens (identifier, terminator)
+import Language.Fim.Parser.Tokens (terminator)
 import Language.Fim.Parser.Statement (statement)
 
 import Control.Monad (void)
@@ -13,6 +13,8 @@ import Text.Parsec (try, (<?>))
 import Text.Parsec.Text (Parser)
 import Text.Parsec.Char (string, space, newline)
 import Text.Parsec.Combinator (many1, optionMaybe, manyTill)
+
+identifier = undefined
 
 emptyLine :: Parser (Maybe Types.Function)
 emptyLine = many1 space >> return Nothing
@@ -30,4 +32,5 @@ method = do
 methodEnd :: Types.Identifier -> Parser ()
 methodEnd idt =
   let name = T.unpack $ Types.idName idt in
-  void $ string "That's all about " >> string name >> terminator
+  undefined
+  -- void $ string "That's all about " >> string name >> terminator

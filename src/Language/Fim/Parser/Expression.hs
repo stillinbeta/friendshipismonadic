@@ -1,10 +1,9 @@
 module Language.Fim.Parser.Expression (expression
-                                      , variable
                                       ) where
 
 import qualified Language.Fim.Types as Types
 import Language.Fim.Parser.Literal (literal)
-import Language.Fim.Parser.Tokens (terminator, reservedWords)
+import Language.Fim.Parser.Tokens (terminator)
 import Language.Fim.Parser.Util (space_)
 
 import Control.Applicative ((<|>))
@@ -23,16 +22,17 @@ expression = choice [ try binaryOperatorPrefix
                     ]
 
 shallowExpression :: Parser Types.Expression
-shallowExpression = (Types.ELiteral  <$> literal  <?> "literal")
-                <|> (Types.EVariable <$> variable <?> "variable")
+shallowExpression = undefined
+                    -- (Types.ELiteral  <$> literal  <?> "literal")
+                    -- <|> (Types.EVariable <$> variable <?> "variable")
 
-variable :: Parser Types.Variable
-variable =
-  Types.Variable . T.pack <$> manyTill anyChar endOfVariable
+-- variable :: Parser Types.Variable
+-- variable =
+--   Types.Variable . T.pack <$> manyTill anyChar endOfVariable
 
 -- Voids needed inline to bring types into alignment
-endOfVariable :: Parser ()
-endOfVariable = lookAhead $ void terminator <|> void reservedWords
+-- endOfVariable :: Parser ()
+-- endOfVariable = lookAhead $ void terminator <|> void reservedWords
 
 binaryOperatorInfix :: Parser Types.Expression
 binaryOperatorInfix = do

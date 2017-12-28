@@ -1,8 +1,8 @@
 module Language.Fim.Parser.Statement (statement) where
 
 import qualified Language.Fim.Types as Types
-import Language.Fim.Parser.Tokens (terminator)
-import Language.Fim.Parser.Expression (expression, variable)
+-- import Language.Fim.Parser.Tokens (terminator)
+import Language.Fim.Parser.Expression (expression)
 import Language.Fim.Parser.Literal (literal)
 
 import Control.Monad (void)
@@ -19,6 +19,11 @@ statement = choice [ output
                    ] <?> "statement"
 
 -- output --
+
+-- TODO
+variable = undefined
+terminator = undefined
+
 
 output :: Parser Types.Statement
 output = do
