@@ -20,6 +20,9 @@ data WithText a = WithText { s :: a
                            , p :: T.Text
                            } deriving (Eq, Show)
 
+wtLift :: (a -> b) -> WithText a -> WithText b
+wtLift f (WithText a t) = WithText (f a) t
+
 genClass :: Gen (WithText Class)
 genClass = do
   (WithText sName pName) <- genIdentifier
@@ -180,19 +183,59 @@ genStringNoun = Gen.element ["word", "phrase", "sentence", "quote", "name"]
 genCharNoun :: Gen T.Text
 genCharNoun = Gen.element ["letter", "character"]
 
--- TODO: enforce a/an consistency
-genArticle :: Gen T.Text
-genArticle = Gen.element ["The", "A", "An"]
+----------------
+-- Expression --
+----------------
 
 genExpr :: Gen (WithText Expression)
-genExpr = Gen.choice [ genVLiteral
-                      --, VVariable <$> genVariable
-                      ]
+genExpr = Gen.choice [ genELiteral
+                     , genEVariable
+                     , genMathExpression
+                     ]
 
-genVLiteral :: Gen (WithText Expression)
-genVLiteral = do
+genELiteral :: Gen (WithText Expression)
+genELiteral = do
   lit <- genLiteral
   return $ WithText (ELiteral $ s lit) (p lit)
+
+genEVariable :: Gen (WithText Expression)
+genEVariable = do
+  var <- genVariable
+  return $ WithText (EVariable $ s var) (p var)
+
+genMathExpression :: Gen (WithText Expression)
+genMathExpression = do
+  arg1 <- genNumberExpr
+  arg2 <- genNumberExpr
+  opr <- genMathOperator
+  text <- Gen.choice [ do
+                         verb <- genInfixVerb opr
+                         return $ T.concat [ p arg1, " ", verb, " ", p arg2 ]
+                      , pure $ T.concat [ "add ", p arg1, " and ", p arg2 ]
+                      ]
+  return $ WithText
+    EBinaryOperator { eBinArg1 = s arg1
+                    , eBinArg2 = s arg2
+                    , eBinOp   = opr
+                    }
+    text
+
+genInfixVerb :: BinaryOperator -> Gen T.Text
+genInfixVerb opr = case opr of
+  Add -> Gen.element [ "plus"
+                     , "and"
+                     , "added to"
+                     ]
+
+genNumberExpr :: Gen (WithText Expression)
+genNumberExpr = Gen.choice [ wtLift EVariable <$> genVariable
+                           , wtLift ELiteral  <$> genNumberLiteral
+                           ]
+
+genMathOperator :: Gen (BinaryOperator)
+genMathOperator = do
+  Gen.element [Add]
+
 
 --------------
 -- Literals --

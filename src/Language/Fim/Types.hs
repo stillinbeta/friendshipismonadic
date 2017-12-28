@@ -2,6 +2,7 @@ module Language.Fim.Types ( Class(..)
                           , Function(..)
                           , Statement(..)
                           , Expression(..)
+                          , BinaryOperator(..)
                           , Literal(..)
                           , StringQuote(..)
                           , Identifier(..)
@@ -41,16 +42,21 @@ data Statement = Output { outputExpr :: Expression
                deriving (Eq, Show)
 
 data Expression = ELiteral { eLiteral :: Literal}
-           | EVariable { eVariable :: Variable}
+                | EVariable { eVariable :: Variable}
+                | EBinaryOperator { eBinArg1 :: Expression
+                                  , eBinArg2 :: Expression
+                                  , eBinOp :: BinaryOperator
+                                  }
   deriving (Eq, Show)
+
+data BinaryOperator = Add deriving (Eq, Show)
 
 
 newtype Variable = Variable { vName :: T.Text
                             } deriving (Eq, Show)
 
 
-data Literal = StringLiteral { slValue :: T.Text
-                             }
+data Literal = StringLiteral { slValue :: T.Text}
              | NumberLiteral { nlValue :: Double} -- TODO: Supposed to be Float64
              | CharacterLiteral { clValue :: Char
                                 }

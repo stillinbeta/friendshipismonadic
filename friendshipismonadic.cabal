@@ -30,6 +30,7 @@ library
                              Language.Fim.Parser.Methods
                              Language.Fim.Parser.Literal
                              Language.Fim.Parser.Expression
+                             Language.Fim.Parser.Util
         build-depends:       base >= 4.7 && < 5,
                              parsec == 3.1.*,
                              text == 1.2.*,

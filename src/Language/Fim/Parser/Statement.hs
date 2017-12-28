@@ -26,7 +26,7 @@ output = do
   outputVerb
   void space
   expr <- expression
-  terminator
+  terminator <?> "statement terminator"
   void newline
   return $ Types.Output expr
 

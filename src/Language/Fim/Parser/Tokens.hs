@@ -55,4 +55,10 @@ reservedWordList = [ "Dear"
                    , "now"
                    , "become"
                    , "becomes"
+                   -- Binary Arithmatic Operators
+                   , "add"
+                   , "plus"
+                   , "and"
+                   , "added"
+                   , "to"
                    ]
