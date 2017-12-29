@@ -7,9 +7,7 @@ import Language.Fim.Lexer (lexTokens)
 import qualified Data.Text as T
 import qualified Text.Parsec as Parsec
 
-import Debug.Trace
-
 parse :: T.Text -> Either String Class
-parse t = either (Left . show) (Right) $ do
+parse t = either (Left . show) Right $ do
   tokens <- lexTokens t
-  Parsec.parse fimClass "" tokens
+  Parsec.parse fimClass "parser" $! tokens

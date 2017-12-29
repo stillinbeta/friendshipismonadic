@@ -1,6 +1,7 @@
 module Language.Fim.Lexer ( lexTokens
+                          , pprint
+                          , LexStream
                           ) where
-
 
 import Language.Fim.Parser.Tokens (reservedWordList)
 import qualified Language.Fim.Lexer.Token as Token
@@ -15,8 +16,9 @@ import Text.Parsec.Combinator (choice, optionMaybe, many1, manyTill, lookAhead)
 import Text.Parsec.Char (string, char, newline, digit, anyChar, oneOf, space)
 
 
+type LexStream = [(SourcePos, Token.Token)]
 
-lexTokens :: T.Text -> Either ParseError [(SourcePos, Token.Token)]
+lexTokens :: T.Text -> Either ParseError LexStream
 lexTokens = parse lexTokens' ""
 
 lexTokens' :: Parser [(SourcePos, Token.Token)]
@@ -31,14 +33,25 @@ space' = oneOf " \t"
 lexToken :: Parser (SourcePos, Token.Token)
 lexToken = (,) <$> getPosition <*> lexToken'
 
+-- Atomic string. Managing "try" everywhere is a pain
+astring :: String -> Parser String
+astring = try . string
+
 lexToken' :: Parser Token.Token
 lexToken' = choice
-  [ string "Dear" $> Token.ClassStart
-  , string "Your faithful student," $> Token.ClassEnd
+  [ astring "Dear" $> Token.ClassStart -- prefix of Did you Know
+  , astring "Your faithful student," $> Token.ClassEnd
 
-  , string "Today" $> Token.MainMethod
-  , string "I learned" $> Token.MethodDec
-  , string "That's all about" $> Token.MethodDecEnd
+  , astring "Today" $> Token.MainMethod -- prefix of That's all about
+  , astring "I" $> Token.I
+  , astring "learned" $> Token.MethodDec -- prefix of letter
+  , astring "That's all about" $> Token.MethodDecEnd
+
+  , choice [ astring "said"
+           , astring "wrote"
+           , astring "sang"
+           , astring "thought"
+           ] $> Token.OutputVerb
 
   , Token.NumberLiteral <$> numberLiteral
   , Token.CharLiteral   <$> charLiteral
@@ -53,32 +66,45 @@ lexToken' = choice
   , char '…' $> Token.Ellipsis
   , newline  $> Token.Newline
 
-  , string "Did you know that" $> Token.VariableDec
-  , variableVerb $> Token.VariableVerb
-  , string "number" $> Token.NumberType
-  , choice [string "letter", string "chararacter"] $> Token.CharacterType
-  , choice [ string "word"
-           , string "phrase"
-           , string "sentence"
-           , string "quote"
-           , string "name"
+  , astring "Did you know that" $> Token.VariableDec
+  , astring "is" $> Token.Is
+  , astring "are" $> Token.Are
+  , choice [ astring "was"
+           , astring "has"
+           , astring "had"
+           , astring "liked"
+           ] $> Token.VariableVerb
+  , astring "always" $> Token.VariableConstant
+  , astring "now" $> Token.Now
+  , choice [ astring "likes"
+           , astring "like"
+           ] $> Token.Like
+  , choice [ astring "becomes"
+           , astring "become"
+           ] $> Token.Become
+  , astring "number" $> Token.NumberType
+  , choice [ astring "letter"
+           , astring "character"] $> Token.CharacterType
+  , choice [ astring "word"
+           , astring "phrase"
+           , astring "sentence"
+           , astring "quote"
+           , astring "name"
            ] $> Token.StringType
 
-  , string "and" $> Token.And
-  , string "add" $> Token.AddPrefix
+  , astring "and" $> Token.And
+  , choice [ astring "added to"
+           , astring "plus"
+           ] $> Token.AddInfix
+  , astring "add" $> Token.AddPrefix
+
+  , choice [ astring "the"
+           , astring "an"
+           , astring "a"
+           ] $> Token.Article
 
   , Token.Identifier <$> identifier1
   ]
-
-variableVerb :: Parser String
-variableVerb = choice [       string "is"
-                      ,       string "was"
-                      , try $ string "has"
-                      ,       string "had"
-                      , try $ string "like"
-                      , try $ string "likes"
-                      ,       string "liked"
-                      ]
 
 numberLiteral :: Parser Double
 numberLiteral = do
@@ -136,3 +162,11 @@ punctuation = oneOf ".!?‽…:"
 reservedWords :: Parser ()
 -- try (space >> string Dear)
 reservedWords = void $ choice $ map (try . (space>>) . string) reservedWordList
+
+-- Utility
+
+pprint :: LexStream -> String
+pprint = unwords . map (show' . snd)
+  where show' x = case x of
+                    Token.Newline -> "\n"
+                    _ -> show x

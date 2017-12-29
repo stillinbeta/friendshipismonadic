@@ -1,36 +1,39 @@
-module Language.Fim.Parser.Methods (method
-                          , emptyLine
-                          ) where
+module Language.Fim.Parser.Methods ( method
+                                   , methods
+                                   ) where
 
 import qualified Language.Fim.Types as Types
-import Language.Fim.Parser.Tokens (terminator)
-import Language.Fim.Parser.Statement (statement)
+import Language.Fim.Parser.Tokens (terminator, identifier)
+import Language.Fim.Parser.Util (Parser, token, token_, manyWithNewlines)
+import Language.Fim.Parser.Statement (statements)
+import qualified Language.Fim.Lexer.Token as Token
 
-import Control.Monad (void)
+import Control.Monad (unless)
 import Data.Maybe (isJust)
 import qualified Data.Text as T
-import Text.Parsec (try, (<?>))
-import Text.Parsec.Text (Parser)
-import Text.Parsec.Char (string, space, newline)
-import Text.Parsec.Combinator (many1, optionMaybe, manyTill)
+import Text.Parsec.Combinator (optionMaybe)
 
-identifier = undefined
+methods :: Parser [Types.Function]
+methods = manyWithNewlines method
 
-emptyLine :: Parser (Maybe Types.Function)
-emptyLine = many1 space >> return Nothing
-
-method :: Parser (Maybe Types.Function)
+method :: Parser Types.Function
 method = do
-  isMain <- isJust <$> optionMaybe (string "Today ")
-  void $ string "I learned "
+  isMain <- isJust <$> optionMaybe (token Token.MainMethod)
+  methodDec
   name <- identifier
+  terminator
+  token_ Token.Newline
+  stmts <- statements
+  methodEnd name
+  token_ Token.Newline
+  return (Types.Function (Types.Identifier name) isMain stmts)
 
-  void newline
-  stmts <- manyTill statement (try $ methodEnd name) <?> "statement or end of function"
-  return $ Just (Types.Function name isMain stmts)
+methodEnd :: T.Text -> Parser ()
+methodEnd idt = do
+  token_ Token.MethodDecEnd
+  end <- identifier
+  unless (idt == end) $ fail "expected method end"
+  terminator
 
-methodEnd :: Types.Identifier -> Parser ()
-methodEnd idt =
-  let name = T.unpack $ Types.idName idt in
-  undefined
-  -- void $ string "That's all about " >> string name >> terminator
+methodDec :: Parser ()
+methodDec = token_ Token.I >> token_ Token.MethodDec

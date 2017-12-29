@@ -1,16 +1,23 @@
-module Language.Fim.Parser.Statement (statement) where
+module Language.Fim.Parser.Statement ( statement
+                                     , statements
+                                     ) where
 
 import qualified Language.Fim.Types as Types
 -- import Language.Fim.Parser.Tokens (terminator)
-import Language.Fim.Parser.Expression (expression)
+import Language.Fim.Parser.Value (value, variable)
+import Language.Fim.Parser.Util (Parser, token_, tokenChoice_, manyWithNewlines)
+import Language.Fim.Parser.Tokens (terminator)
 import Language.Fim.Parser.Literal (literal)
+import qualified Language.Fim.Lexer.Token as Token
 
-import Control.Monad (void)
+import Data.Functor (($>))
 import Data.Maybe (isJust)
-import Text.Parsec ((<?>), (<|>), try)
-import Text.Parsec.Text (Parser)
+import Text.Parsec ((<?>), (<|>))
 import Text.Parsec.Combinator (choice, optionMaybe, optional)
-import Text.Parsec.Char (string, space, newline, char)
+
+
+statements :: Parser [Types.Statement]
+statements = manyWithNewlines statement
 
 statement :: Parser Types.Statement
 statement = choice [ output
@@ -19,111 +26,73 @@ statement = choice [ output
                    ] <?> "statement"
 
 -- output --
-
--- TODO
-variable = undefined
-terminator = undefined
-
-
 output :: Parser Types.Statement
 output = do
-  void $ string "I "
-  outputVerb
-  void space
-  expr <- expression
-  terminator <?> "statement terminator"
-  void newline
-  return $ Types.Output expr
-
-outputVerb :: Parser ()
-outputVerb = void $
-  choice [ try $ string "said" -- sa is a prefix of sang
-         , string "sang"
-         , string "thought"
-         , string "wrote"
-         ]
+  token_ Token.I
+  token_ Token.OutputVerb
+  val <- value
+  terminator
+  token_ Token.Newline
+  return $ Types.Output val
 
 -- Declaration --
 
+variableVerb :: Parser ()
+variableVerb = tokenChoice_ [ Token.Is
+                            , Token.VariableVerb
+                            , Token.Like
+                            ]
+
 declaration :: Parser Types.Statement
 declaration = do
-  void $ string "Did you know that "
+  token_ Token.VariableDec
   var <- variable
-  space <?> "declaration variable space"
-  declarationVerb
-  space <?> "declaration verb space"
-  isConstant <- constant
-  (typ, expr) <- choice [ declarationTyped
-                       , declarationVariable]
-  char '?'
-  newline
+  variableVerb
+  isConstant <- isJust <$> optionMaybe (token_ Token.VariableConstant)
+  (typ, val) <-  choice [ declarationTyped
+                        , declarationVariable
+                        ]
+  terminator
+  token_ Token.Newline
   return Types.Declaration { Types.declareName = var
-                           , Types.declareExpr = expr
-                           , Types.declareIsConsnant = isConstant
+                           , Types.declareVal = val
                            , Types.declareType = typ
+                           , Types.declareIsConstant = isConstant
                            }
 
-declarationVerb :: Parser ()
-declarationVerb = void $ choice [ string "is"
-                                , string "was"
-                                , try (string "has")
-                                , string "had"
-                                , try (string "likes")
-                                , try (string "liked")
-                                , string "like"
-                                ]
-
-declarationTyped :: Parser (Maybe Types.Type, Maybe Types.Expression)
+declarationTyped :: Parser (Maybe Types.Type, Maybe Types.Value)
 declarationTyped = do
-  declarationOptionalArticle
+  optional $ token_ Token.Article
   typ <- declarationType
-  val <- optionMaybe $ space >> literal
-  return (Just typ, Types.ELiteral <$> val)
+  val <- optionMaybe literal
+  return (Just typ, Types.VLiteral <$> val)
 
-declarationVariable :: Parser (Maybe Types.Type, Maybe Types.Expression)
+declarationVariable :: Parser (Maybe Types.Type, Maybe Types.Value)
 declarationVariable = do
   var <- variable
-  return (Nothing, Just $ Types.EVariable var)
-
-declarationOptionalArticle :: Parser ()
-declarationOptionalArticle = optional $ choice [ try $ string "the "
-                                               , try $ string "a "]
+  return (Nothing, Just $ Types.VVariable var)
 
 declarationType :: Parser Types.Type
-declarationType = choice [ try (string "number")    >> pure Types.TNumber
-
-                         , try (string "letter")    >> pure Types.TCharacter
-                         , try (string "character") >> pure Types.TCharacter
-
-                         , try (string "word")      >> pure Types.TString
-                         , try (string "phrase")    >> pure Types.TString
-                         , try (string "sentence")  >> pure Types.TString
-                         , try (string "quote")     >> pure Types.TString
-                         , try (string "name")      >> pure Types.TString
+declarationType = choice [ token_ Token.NumberType    $> Types.TNumber
+                         , token_ Token.CharacterType $> Types.TCharacter
+                         , token_ Token.StringType    $> Types.TString
                          ]
-
-constant :: Parser Bool
-constant = do
-  val <- optionMaybe $ do
-    try $ string "always"
-    space
-  return $ isJust val
 
 -- Assignment --
 
 assignment :: Parser Types.Statement
 assignment = do
   var <- variable <?> "variable"
-  space <?> "assignment variable"
-  choice [ try (string "becomes")
-         , string "become"
-         , (string "is" <|> string "are") >> space >> string "now"
-         , string "now" >> space >> (try (string "likes") <|> string "like")
-         ] <?> "assignment"
-  space <?> "assignment space"
-  expr <- expression <?> "expression"
+  assignmentVerb
+  val <- value
   terminator
-  newline
+  token_ Token.Newline
   return Types.Assignment { Types.assignmentName = var
-                          , Types.assignmentExpr = expr
+                          , Types.assignmentExpr = val
                           }
+
+assignmentVerb :: Parser ()
+assignmentVerb = choice [ (token_ Token.Is <|> token_ Token.Are) >> token_ Token.Now
+                        , token_ Token.Now >> token_ Token.Like
+                        , token_ Token.Become
+                        ]

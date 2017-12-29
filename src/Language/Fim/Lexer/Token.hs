@@ -11,6 +11,7 @@ import qualified Data.Text as T
 data Token = ClassStart
            | ClassEnd
            -- Methods
+           | I
            | MainMethod
            | MethodDec
            | MethodDecEnd
@@ -32,12 +33,22 @@ data Token = ClassStart
            -- Variables
            | VariableDec
            | VariableVerb
+           | Article
+           | VariableConstant
            | NumberType
            | StringType
            | CharacterType
+           | Is
+           | Are
+           | Now
+           | Like
+           | Become
+           -- Interaction
+           | OutputVerb
            -- Arithmetic
            | And
            | AddPrefix
+           | AddInfix
            deriving (Show, Eq)
 
 -- Only match on types

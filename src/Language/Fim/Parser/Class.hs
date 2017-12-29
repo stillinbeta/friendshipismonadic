@@ -2,16 +2,11 @@ module Language.Fim.Parser.Class (fimClass) where
 
 import qualified Language.Fim.Types as Types
 import Language.Fim.Parser.Tokens (identifier, terminator)
-import Language.Fim.Parser.Util (Parser, token, token_)
+import Language.Fim.Parser.Util (Parser, token_)
 import qualified Language.Fim.Lexer.Token as Token
--- import qualified Language.Fim.Parser.Methods as Methods
+import Language.Fim.Parser.Methods (methods)
 
-import Control.Applicative (many)
-import Control.Monad (void)
-import Data.Maybe (catMaybes)
 import qualified Data.Text as T
-import Text.Parsec ((<|>), (<?>))
-import Text.Parsec.Combinator (choice, manyTill)
 
 fimClass :: Parser Types.Class
 fimClass = do
@@ -21,18 +16,18 @@ fimClass = do
   name <- Types.Identifier <$> identifier
   terminator
   token_ Token.Newline
-  -- funcs <- classBody
+  funcs <- methods
   fimClassSignoff
   return Types.Class { Types.className = name
                      , Types.classSuper = superclass
-                     , Types.classBody = []
+                     , Types.classBody = funcs
                      }
 
 fimSuperClass :: T.Text -> Types.Class
-fimSuperClass id =
-  if id == T.pack "Princess Celestia"
+fimSuperClass ident =
+  if ident == T.pack "Princess Celestia"
   then Types.Celestia
-  else Types.ClassByName id
+  else Types.ClassByName ident
 
 fimClassSignoff :: Parser ()
 fimClassSignoff = do
@@ -40,10 +35,3 @@ fimClassSignoff = do
   token_ Token.tIdentifier
   terminator
   token_ Token.Newline
-
--- classBody :: Parser [Types.Function]
--- classBody = do
---   body <- manyTill ((Methods.emptyLine <?> "empty line")
---                      <|> (Methods.method <?> "method"))
---           fimClassSignoff
---   return $ catMaybes body

@@ -1,7 +1,7 @@
 module Language.Fim.Types ( Class(..)
                           , Function(..)
                           , Statement(..)
-                          , Expression(..)
+                          , Value(..)
                           , BinaryOperator(..)
                           , Literal(..)
                           , StringQuote(..)
@@ -26,31 +26,30 @@ data Function = Function { functionName :: Identifier
                          , functionBody :: [Statement]
                          } deriving (Eq, Show)
 
-
 data Type = TNumber | TString | TCharacter deriving (Eq, Show)
 
-data Statement = Output { outputExpr :: Expression
+data Statement = Output { outputValue :: Value
                         }
                | Declaration { declareName :: Variable
-                             , declareExpr :: Maybe Expression
-                             , declareIsConsnant :: Bool
+                             , declareVal :: Maybe Value
+                             , declareIsConstant :: Bool
                              , declareType :: Maybe Type
                              }
                | Assignment { assignmentName :: Variable
-                            , assignmentExpr :: Expression
+                            , assignmentExpr :: Value
                             }
                deriving (Eq, Show)
 
-data Expression = ELiteral { eLiteral :: Literal}
-                | EVariable { eVariable :: Variable}
-                | EBinaryOperator { eBinArg1 :: Expression
-                                  , eBinArg2 :: Expression
-                                  , eBinOp :: BinaryOperator
-                                  }
-  deriving (Eq, Show)
+data Value = VLiteral { vLiteral :: Literal}
+           | VVariable { vVariable :: Variable}
+           | VBinaryOperation { vBinArg1 :: Value
+                              , vBinOpr  :: BinaryOperator
+                              , vBinArg2 :: Value
+                              }
+           deriving (Eq, Show)
 
-data BinaryOperator = Add deriving (Eq, Show)
-
+data BinaryOperator = Add
+                    deriving (Eq, Show)
 
 newtype Variable = Variable { vName :: T.Text
                             } deriving (Eq, Show)

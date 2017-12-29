@@ -30,14 +30,12 @@ genClass = do
   p1 <- genPunctuation
   studentName <- genName
   p2 <- genPunctuation
-
-  -- body <- Gen.list (Range.linear 1 100) genFunction
-  let body = []
+  body <- Gen.list (Range.linear 1 100) genFunction
   return $ WithText
     Class { className    = sName
-           , classSuper   = sSuper
-           , classBody    = map s body
-           }
+          , classSuper   = sSuper
+          , classBody    = map s body
+          }
     (T.concat $ [ "Dear ", pSuper, ": ", pName, p1, "\n"]
              ++ map p body
              ++ ["Your faithful student, ", studentName, p2, "\n"])
@@ -101,37 +99,37 @@ genStatement = Gen.choice [ genOutput
 genOutput :: Gen (WithText Statement)
 genOutput = do
   verb <- Gen.element ["sang", "wrote", "said", "thought"]
-  expr <- genExpr
+  val <- genValue
   p0 <- genPunctuation
   return $ WithText
-    Output { outputExpr = s expr }
-    (T.concat ["I ", verb, " ", p expr, p0, "\n"])
+    Output { outputValue = s val }
+    (T.concat ["I ", verb, " ", p val, p0, "\n"])
 
 genDeclaration :: Gen (WithText Statement)
 genDeclaration = do
   verb <- Gen.element ["is", "was", "has", "had", "like","likes", "liked"]
   name <- genVariable
   isConstant <- Gen.bool
-  (expr, typ) <- Gen.choice [ genDeclarationNothingTyped
+  (val, typ) <- Gen.choice [ genDeclarationNothingTyped
                            , genDeclarationLiteralTyped
                            , genDeclarationVariable
                            ]
   return $ WithText
     Declaration { declareName = s name
-                , declareExpr = s expr
-                , declareIsConsnant = isConstant
+                , declareVal = s val
+                , declareIsConstant = isConstant
                 , declareType = typ
                 }
     (T.concat [ "Did you know that ", p name, " ", verb,
                if isConstant then " always " else " ",
-               p expr, "?\n"
+               p val, "?\n"
                ]
     )
 
 genAssignment :: Gen (WithText Statement)
 genAssignment = do
   var <- genVariable
-  expr <- genExpr
+  val <- genValue
   statement <- Gen.element [ "is now"
                            , "are now"
                            , "now like"
@@ -142,11 +140,11 @@ genAssignment = do
   p0 <- genPunctuation
   return $ WithText
     Assignment { assignmentName = s var
-               , assignmentExpr = s expr
+               , assignmentExpr = s val
                }
-    (T.concat [ p var, " ", statement, " ", p expr, p0, "\n"])
+    (T.concat [ p var, " ", statement, " ", p val, p0, "\n"])
 
-genDeclarationNothingTyped :: Gen (WithText (Maybe Expression), Maybe Type)
+genDeclarationNothingTyped :: Gen (WithText (Maybe Value), Maybe Type)
 genDeclarationNothingTyped = do
   article <- Gen.element ["", "the ", "a "]
   (gen, typ) <- Gen.choice [ pure (genNumberNoun, TNumber)
@@ -156,7 +154,7 @@ genDeclarationNothingTyped = do
   noun <- gen
   return (WithText Nothing $ T.concat [article, noun], Just typ)
 
-genDeclarationLiteralTyped :: Gen (WithText (Maybe Expression), Maybe Type)
+genDeclarationLiteralTyped :: Gen (WithText (Maybe Value), Maybe Type)
 genDeclarationLiteralTyped = do
   article <- Gen.element ["", "the ", "a "]
   lit <- genLiteral
@@ -166,14 +164,14 @@ genDeclarationLiteralTyped = do
             CharacterLiteral{} -> (genCharNoun, pure TCharacter)
   noun <- gen
   return (WithText
-          (Just ELiteral { eLiteral = s lit})
+          (Just VLiteral { vLiteral = s lit})
           (T.concat [article , noun, " ", p lit])
          , typ)
 
-genDeclarationVariable :: Gen (WithText (Maybe Expression), Maybe Type)
+genDeclarationVariable :: Gen (WithText (Maybe Value), Maybe Type)
 genDeclarationVariable = do
   var <- genVariable
-  return (WithText (Just . EVariable $ s var) (p var), Nothing)
+  return (WithText (Just . VVariable $ s var) (p var), Nothing)
 
 genNumberNoun :: Gen T.Text
 genNumberNoun = pure "number"
@@ -188,38 +186,91 @@ genCharNoun = Gen.element ["letter", "character"]
 -- Expression --
 ----------------
 
-genExpr :: Gen (WithText Expression)
-genExpr = Gen.choice [ genELiteral
-                     , genEVariable
-                     , genMathExpression
-                     ]
+-- genELiteral :: Gen (WithText Expression)
+-- genELiteral = do
+--   lit <- genLiteral
+--   return $ WithText (ELiteral $ s lit) (p lit)
 
-genELiteral :: Gen (WithText Expression)
-genELiteral = do
-  lit <- genLiteral
-  return $ WithText (ELiteral $ s lit) (p lit)
+-- genEVariable :: Gen (WithText Expression)
+-- genEVariable = do
+--   var <- genVariable
+--   return $ WithText (EVariable $ s var) (p var)
 
-genEVariable :: Gen (WithText Expression)
-genEVariable = do
-  var <- genVariable
-  return $ WithText (EVariable $ s var) (p var)
+-- genMathExpression :: Gen (WithText Expression)
+-- genMathExpression = do
+--   arg1 <- genNumberExpr
+--   arg2 <- genNumberExpr
+--   opr <- genMathOperator
+--   text <- Gen.choice [ do
+--                          verb <- genInfixVerb opr
+--                          return $ T.concat [ p arg1, " ", verb, " ", p arg2 ]
+--                       , pure $ T.concat [ "add ", p arg1, " and ", p arg2 ]
+--                       ]
+--   return $ WithText
+--     EBinaryOperator { eBinArg1 = s arg1
+--                     , eBinArg2 = s arg2
+--                     , eBinOp   = opr
+--                     }
+--     text
 
-genMathExpression :: Gen (WithText Expression)
-genMathExpression = do
-  arg1 <- genNumberExpr
-  arg2 <- genNumberExpr
-  opr <- genMathOperator
-  text <- Gen.choice [ do
-                         verb <- genInfixVerb opr
-                         return $ T.concat [ p arg1, " ", verb, " ", p arg2 ]
-                      , pure $ T.concat [ "add ", p arg1, " and ", p arg2 ]
+-- genInfixVerb :: BinaryOperator -> Gen T.Text
+-- genInfixVerb opr = case opr of
+--   Add -> Gen.element [ "plus"
+--                      , "and"
+--                      , "added to"
+--                      ]
+
+-- genNumberExpr :: Gen (WithText Expression)
+-- genNumberExpr = Gen.choice [ wtLift EVariable <$> genVariable
+--                            , wtLift ELiteral  <$> genNumberLiteral
+--                            ]
+
+-- genMathOperator :: Gen (BinaryOperator)
+-- genMathOperator = do
+--   Gen.element [Add]
+
+-----------
+-- Value --
+-----------
+genValue :: Gen (WithText Value)
+genValue = Gen.choice [ genShallowValue
+                      , genExpr
                       ]
-  return $ WithText
-    EBinaryOperator { eBinArg1 = s arg1
-                    , eBinArg2 = s arg2
-                    , eBinOp   = opr
-                    }
-    text
+
+genShallowValue :: Gen (WithText Value)
+genShallowValue  = Gen.choice [ wtLift VLiteral  <$> genLiteral
+                              , wtLift VVariable <$> genVariable
+                              ]
+
+genExpr :: Gen (WithText Value)
+genExpr = Gen.recursive
+  Gen.choice
+  [ genShallowValue ]
+  -- Parser is left-greedy
+  [ Gen.subtermM2 genShallowValue genExpr makeBinaryOperator]
+
+makeBinaryOperator :: WithText Value -> WithText Value -> Gen (WithText Value)
+makeBinaryOperator e1 e2 = do
+  opr <- genBinaryOperator
+  txt <- Gen.choice [ genInfixBinaryOperator opr e1 e2
+                    , genPrefixBinaryOperator opr e1 e2
+                    ]
+  let binOp = VBinaryOperation { vBinArg1 = s e1
+                               , vBinOpr = opr
+                               , vBinArg2 = s e2
+                               }
+  return $ WithText binOp txt
+
+genInfixBinaryOperator :: BinaryOperator -> WithText Value -> WithText Value -> Gen T.Text
+genInfixBinaryOperator opr v1 v2 = do
+  infixV <- genInfixVerb opr
+  return $ T.intercalate " " [p v1 , infixV, p v2]
+
+genPrefixBinaryOperator :: BinaryOperator -> WithText Value -> WithText Value -> Gen T.Text
+genPrefixBinaryOperator opr v1 v2 = do
+  prefixV <- genPrefixVerb opr
+  prefixC <- genPrefixConjuction opr
+  return $ T.intercalate " " [prefixV, p v1, prefixC, p v2]
 
 genInfixVerb :: BinaryOperator -> Gen T.Text
 genInfixVerb opr = case opr of
@@ -228,15 +279,16 @@ genInfixVerb opr = case opr of
                      , "added to"
                      ]
 
-genNumberExpr :: Gen (WithText Expression)
-genNumberExpr = Gen.choice [ wtLift EVariable <$> genVariable
-                           , wtLift ELiteral  <$> genNumberLiteral
-                           ]
+genPrefixVerb :: BinaryOperator -> Gen T.Text
+genPrefixVerb opr = case opr of
+  Add -> pure "add"
 
-genMathOperator :: Gen (BinaryOperator)
-genMathOperator = do
-  Gen.element [Add]
+genPrefixConjuction :: BinaryOperator -> Gen T.Text
+genPrefixConjuction opr = case opr of
+  Add -> pure "and"
 
+genBinaryOperator :: Gen BinaryOperator
+genBinaryOperator = Gen.element [ Add ]
 
 --------------
 -- Literals --

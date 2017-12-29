@@ -13,7 +13,7 @@ import System.IO (stderr)
 
 main :: IO ()
 main = hspec $ do
-  describe "lexer" $ do
+  describe "parser" $ do
     it "should lex a simple, empty class" $ do
       let program = [text|Dear Princess Celestia: Hello World!
                           Your faithful student, Twilight Sparkle.|]
@@ -44,7 +44,7 @@ main = hspec $ do
       let expected = Class (Identifier "Hello World") Celestia [
             Function (Identifier "something simple") True [
                 Output (
-                    ELiteral (StringLiteral "Hello, World!")
+                    VLiteral (StringLiteral "Hello, World!")
                     )
                 ]
             ]
@@ -77,7 +77,7 @@ main = hspec $ do
                    |]
         Fim.run program `shouldOutputToStderr` "can't redefine constant Applejack\n"
       it "should error on assigning to undefined variables" $ do
-        let program = wrapBoilerplate [text|Fluttershy is now the number 12.|]
+        let program = wrapBoilerplate [text|Fluttershy is now 12.|]
         Fim.run program `shouldOutputToStderr` "Undefined variable Fluttershy\n"
       it "should error when assigning mixed types" $ do
         let program = wrapBoilerplate

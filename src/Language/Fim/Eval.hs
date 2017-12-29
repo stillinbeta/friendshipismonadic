@@ -45,17 +45,17 @@ evalMainMethod mthd = mapM_ evalStatement $ functionBody mthd
 
 evalStatement :: (MonadState EvalState m, MonadError T.Text m, MonadIO m) => Statement -> m ()
 evalStatement o@Output{} = do
-  box <- evalExpression $ outputExpr o
+  box <- evalValue $ outputValue o
   liftIO . putStrLn . printableLiteral $ box
 evalStatement d@Declaration{} = do
-  box <- maybe (pure NullBox) evalExpression (declareExpr d)
+  box <- maybe (pure NullBox) evalValue (declareVal d)
   let vname = vName . declareName $ d
   -- TODO: hang on to version information
   checkType box (declareType d) vname
   -- Get a type from the box, if we don't have one already
   let typ = fromMaybe (typeForBox box) (declareType d)
   let vbox = VariableBox { vboxValue = box
-                         , vboxIsConstant = declareIsConsnant d
+                         , vboxIsConstant = declareIsConstant d
                          , vboxType = Just typ
                          }
   m <- gets variables
@@ -76,15 +76,15 @@ evalStatement a@Assignment{} = do
         throwError $ T.concat [ "can't redefine constant "
                               , aname ]
       m <- gets variables
-      box <- evalExpression $ assignmentExpr a
+      box <- evalValue $ assignmentExpr a
       checkType box (vboxType var) aname
       let m' = Map.insert aname (var { vboxValue = box }) m
       modify $ \s -> s { variables = m' }
 
-evalExpression :: (MonadState EvalState m, MonadError T.Text m) => Expression -> m ValueBox
-evalExpression v = case v of
-               EVariable { eVariable = var } -> lookupVariable var
-               ELiteral { eLiteral = lit } -> return $ boxLiteral lit
+evalValue :: (MonadState EvalState m, MonadError T.Text m) => Value -> m ValueBox
+evalValue v = case v of
+               VVariable { vVariable = var } -> lookupVariable var
+               VLiteral { vLiteral = lit } -> return $ boxLiteral lit
 
 checkType :: (MonadError T.Text m) => ValueBox -> Maybe Type -> T.Text -> m ()
 checkType box typ varName =
