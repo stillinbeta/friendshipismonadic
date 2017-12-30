@@ -47,11 +47,16 @@ data Token = ClassStart
            | OutputVerb
            -- Arithmetic
            | And
+           | From
+           | By
            | AddPrefix
            | AddInfix
            | SubtractInfix
            | SubtractPrefix
-           | From
+           | MultiplyInfix
+           | MultiplyPrefix
+           | DivideInfix
+           | DividePrefix
            deriving (Show, Eq)
 
 -- Only match on types

@@ -48,7 +48,7 @@ data Value = VLiteral { vLiteral :: Literal}
                               }
            deriving (Eq, Show)
 
-data BinaryOperator = Add | Subtract
+data BinaryOperator = Add | Subtract | Multiply | Divide
                     deriving (Eq, Show)
 
 newtype Variable = Variable { vName :: T.Text

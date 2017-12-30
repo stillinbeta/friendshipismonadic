@@ -48,9 +48,18 @@ reservedWordList = [ "Dear"
                    , "plus"
                    , "and"
                    , "added to"
+                   -- Subtraction
                    , "minus"
                    , "without"
                    , "subtract"
                    , "the difference between"
                    , "from"
+                   -- Multiplication
+                   , "times"
+                   , "multiplied with"
+                   , "multiply"
+                   -- Division
+                   , "divided by"
+                   , "divide"
+                   , "by"
                    ]

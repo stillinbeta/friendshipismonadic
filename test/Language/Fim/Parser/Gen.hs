@@ -182,52 +182,6 @@ genStringNoun = Gen.element ["word", "phrase", "sentence", "quote", "name"]
 genCharNoun :: Gen T.Text
 genCharNoun = Gen.element ["letter", "character"]
 
-----------------
--- Expression --
-----------------
-
--- genELiteral :: Gen (WithText Expression)
--- genELiteral = do
---   lit <- genLiteral
---   return $ WithText (ELiteral $ s lit) (p lit)
-
--- genEVariable :: Gen (WithText Expression)
--- genEVariable = do
---   var <- genVariable
---   return $ WithText (EVariable $ s var) (p var)
-
--- genMathExpression :: Gen (WithText Expression)
--- genMathExpression = do
---   arg1 <- genNumberExpr
---   arg2 <- genNumberExpr
---   opr <- genMathOperator
---   text <- Gen.choice [ do
---                          verb <- genInfixVerb opr
---                          return $ T.concat [ p arg1, " ", verb, " ", p arg2 ]
---                       , pure $ T.concat [ "add ", p arg1, " and ", p arg2 ]
---                       ]
---   return $ WithText
---     EBinaryOperator { eBinArg1 = s arg1
---                     , eBinArg2 = s arg2
---                     , eBinOp   = opr
---                     }
---     text
-
--- genInfixVerb :: BinaryOperator -> Gen T.Text
--- genInfixVerb opr = case opr of
---   Add -> Gen.element [ "plus"
---                      , "and"
---                      , "added to"
---                      ]
-
--- genNumberExpr :: Gen (WithText Expression)
--- genNumberExpr = Gen.choice [ wtLift EVariable <$> genVariable
---                            , wtLift ELiteral  <$> genNumberLiteral
---                            ]
-
--- genMathOperator :: Gen (BinaryOperator)
--- genMathOperator = do
---   Gen.element [Add]
 
 -----------
 -- Value --
@@ -274,30 +228,40 @@ genPrefixBinaryOperator opr v1 v2 = do
 
 genInfixVerb :: BinaryOperator -> Gen T.Text
 genInfixVerb opr = case opr of
-  Add -> Gen.element [ "plus"
-                     , "and"
-                     , "added to"
-                     ]
+  Add      -> Gen.element [ "plus"
+                          , "and"
+                          , "added to"
+                          ]
   Subtract -> Gen.element [ "minus"
                           , "without"
                           ]
+  Multiply -> Gen.element [ "times"
+                          , "multiplied with"
+                          ]
+  Divide   -> pure "divided by"
 
 genPrefixVerb :: BinaryOperator -> Gen T.Text
 genPrefixVerb opr = case opr of
-  Add -> pure "add"
+  Add      -> pure "add"
   Subtract -> Gen.element [ "subtract"
                           , "the difference between"
                           ]
+  Multiply -> pure "multiply"
+  Divide   -> pure "divide"
 
 genPrefixConjuction :: BinaryOperator -> Gen T.Text
 genPrefixConjuction opr = case opr of
-  Add -> pure "and"
+  Add      -> pure "and"
   Subtract -> Gen.element [ "and"
                           , "from"
                           ]
+  Multiply -> pure "and"
+  Divide   -> Gen.element [ "and"
+                          , "by"
+                          ]
 
 genBinaryOperator :: Gen BinaryOperator
-genBinaryOperator = Gen.element [ Add, Subtract ]
+genBinaryOperator = Gen.element [ Add, Subtract, Multiply, Divide ]
 
 --------------
 -- Literals --

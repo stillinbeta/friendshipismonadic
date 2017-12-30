@@ -94,7 +94,19 @@ main = hspec $ do
                    |]
         Fim.run program `shouldOutputToStderr`
           "Can't assign string to variable Mare Do Well of type character\n"
-
+    describe "arithmetic" $ do
+      it "should support addition" $ do
+        let program = wrapBoilerplate [text|I said 2 and 3 plus 4.25.|]
+        Fim.run program `shouldOutput` "9.25\n"
+      it "should support subtraction" $ do
+        let program = wrapBoilerplate [text|I said subtract 19 from 2?|]
+        Fim.run program `shouldOutput` "17\n"
+      it "should support multiplication" $ do
+        let program = wrapBoilerplate [text|I said 17 times 83:|]
+        Fim.run program `shouldOutput` "1411\n"
+      it "should support division" $ do
+        let program = wrapBoilerplate [text|I said divide 81 by 9!|]
+        Fim.run program `shouldOutput` "9\n"
 
 shouldOutput :: IO (Maybe String) -> String -> Expectation
 shouldOutput io str =

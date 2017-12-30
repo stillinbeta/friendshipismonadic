@@ -69,14 +69,21 @@ binaryOperatorPrefix = do
 
 prefixOperator :: Parser (Types.BinaryOperator, Parser ())
 prefixOperator =
-  choice [ token_ Token.AddPrefix $> (Types.Add, token_ Token.And)
+  choice [ token_ Token.AddPrefix      $> (Types.Add, token_ Token.And)
          , token_ Token.SubtractPrefix $> (Types.Subtract, choice [ token_ Token.And
                                                                   , token_ Token.From
                                                                   ])
+         , token_ Token.MultiplyPrefix $> (Types.Multiply, token_  Token.And)
+         , token_ Token.DividePrefix   $> (Types.Divide, choice [ token_ Token.And
+                                                                , token_ Token.By
+                                                                ]
+                                          )
          ]
 
 infixOperator :: Parser Types.BinaryOperator
-infixOperator = choice [ token_ Token.And      $> Types.Add
-                       , token_ Token.AddInfix $> Types.Add
+infixOperator = choice [ token_ Token.And           $> Types.Add
+                       , token_ Token.AddInfix      $> Types.Add
                        , token_ Token.SubtractInfix $> Types.Subtract
+                       , token_ Token.MultiplyInfix $> Types.Multiply
+                       , token_ Token.DivideInfix   $> Types.Divide
                        ]

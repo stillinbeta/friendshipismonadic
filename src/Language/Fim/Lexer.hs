@@ -95,7 +95,6 @@ lexToken' = choice
            , rstring R_name
            ] $> Token.StringType
 
-  , rstring R_and $> Token.And
   , choice [ rstring R_added_to
            , rstring R_plus
            ] $> Token.AddInfix
@@ -107,7 +106,18 @@ lexToken' = choice
   , choice [ rstring R_subtract
            , rstring R_the_difference_between
            ] $> Token.SubtractPrefix
+
+  , choice [ rstring R_times
+           , rstring R_multiplied_with
+           ] $> Token.MultiplyInfix
+  , rstring R_multiply $> Token.MultiplyPrefix
+
+  , rstring R_divided_by $> Token.DivideInfix
+  , rstring R_divide $> Token.DividePrefix
+
+  , rstring R_and $> Token.And
   , rstring R_from $> Token.From
+  , rstring R_by $> Token.By
 
   , choice [ rstring R_the
            , rstring R_an

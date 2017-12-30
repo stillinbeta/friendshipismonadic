@@ -1,4 +1,4 @@
-{-# LANGUAGE FlexibleContexts, OverloadedStrings #-}
+{-# LANGUAGE FlexibleContexts, OverloadedStrings, ConstraintKinds #-}
 
 module Language.Fim.Eval (runClass
                          ) where
@@ -25,6 +25,8 @@ newEvalState :: EvalState
 newEvalState = EvalState { variables = Map.empty
                          }
 
+type Evaluator m = (MonadState EvalState m, MonadError T.Text m, MonadIO m)
+
 runClass :: Class -> IO ()
 runClass cls = do
   val <- runExceptT (runStateT (evalClass cls) newEvalState)
@@ -32,18 +34,17 @@ runClass cls = do
     Left errMsg -> hPutStrLn stderr errMsg
     Right _ -> return ()
 
-evalClass :: (MonadState EvalState m, MonadError T.Text m, MonadIO m) => Class -> m ()
+evalClass :: (Evaluator m) => Class -> m ()
 evalClass cls = do
   let maybeFunc = find isMain $ classBody cls
   case maybeFunc of
     Just method -> evalMainMethod method
     Nothing -> throwError "no main method"
 
-
-evalMainMethod :: (MonadState EvalState m, MonadError T.Text m, MonadIO m) => Function -> m ()
+evalMainMethod :: (Evaluator m) => Function -> m ()
 evalMainMethod mthd = mapM_ evalStatement $ functionBody mthd
 
-evalStatement :: (MonadState EvalState m, MonadError T.Text m, MonadIO m) => Statement -> m ()
+evalStatement :: (Evaluator m) => Statement -> m ()
 evalStatement o@Output{} = do
   box <- evalValue $ outputValue o
   liftIO . putStrLn . printableLiteral $ box
@@ -81,12 +82,37 @@ evalStatement a@Assignment{} = do
       let m' = Map.insert aname (var { vboxValue = box }) m
       modify $ \s -> s { variables = m' }
 
-evalValue :: (MonadState EvalState m, MonadError T.Text m) => Value -> m ValueBox
+evalValue :: (Evaluator m) => Value -> m ValueBox
 evalValue v = case v of
                VVariable { vVariable = var } -> lookupVariable var
                VLiteral { vLiteral = lit } -> return $ boxLiteral lit
+               VBinaryOperation { vBinArg1 = v1
+                                , vBinOpr  = opr
+                                , vBinArg2 = v2
+                                } -> do
+                 v1' <- evalValue v1
+                 v2' <- evalValue v2
+                 evalBinOp v1' v2' opr
 
-checkType :: (MonadError T.Text m) => ValueBox -> Maybe Type -> T.Text -> m ()
+evalBinOp :: (Evaluator m) => ValueBox -> ValueBox -> BinaryOperator -> m ValueBox
+evalBinOp v1 v2 binOp
+  | binOp `elem` [Add, Multiply, Subtract, Divide] = do
+      n1 <- numberOrError v1
+      n2 <- numberOrError v2
+      return $ NumberBox $ case binOp of
+        Add      -> n1 + n2
+        Subtract -> n1 - n2
+        Multiply -> n1 * n2
+        Divide   -> n1 / n2
+  | otherwise = undefined
+
+numberOrError :: (Evaluator m) => ValueBox -> m Double
+numberOrError (NumberBox n) = pure n
+numberOrError v = throwError $ T.intercalate " " ["expected"
+                                                 , T.pack . show $ v
+                                                 , "to be a number"]
+
+checkType :: (Evaluator m) => ValueBox -> Maybe Type -> T.Text -> m ()
 checkType box typ varName =
   case (box, typ) of
     (_, Nothing) -> return ()
@@ -133,6 +159,13 @@ printableLiteral ::  ValueBox -> T.Text
 printableLiteral literal =
   case literal of
     StringBox s -> s
-    NumberBox num -> T.pack $ show num
+    NumberBox num -> T.pack . showNumber $ num
     CharacterBox c -> T.singleton c
     NullBox -> "nothing"
+
+-- Output integral-ish numbers without trailing zeros
+showNumber :: Double -> String
+showNumber n = let n' = round n :: Int in
+  if abs (n - fromIntegral n') < 0.00000001
+  then show n'
+  else show n
