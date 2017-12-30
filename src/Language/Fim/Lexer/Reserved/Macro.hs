@@ -2,6 +2,7 @@ module Language.Fim.Lexer.Reserved.Macro ( reservedWords
                                          ) where
 
 import Language.Haskell.TH
+import Data.List (intercalate)
 
 reservedWords :: [String] -> Q [Dec]
 reservedWords str = do
@@ -21,6 +22,9 @@ makeToString str = let name = makeName str
                        lit = LitE $ StringL str in
                        Clause [ConP name []] (NormalB lit ) []
 
+underscore :: String -> String
+underscore = intercalate "_" . words
+
 toString :: Name
 toString = mkName "toString"
 
@@ -28,4 +32,4 @@ makeCon :: String -> Con
 makeCon = flip NormalC [] . makeName
 
 makeName :: String -> Name
-makeName = mkName . ("R_"++)
+makeName = mkName . underscore . ("R_"++)

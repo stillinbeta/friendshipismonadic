@@ -70,9 +70,13 @@ binaryOperatorPrefix = do
 prefixOperator :: Parser (Types.BinaryOperator, Parser ())
 prefixOperator =
   choice [ token_ Token.AddPrefix $> (Types.Add, token_ Token.And)
+         , token_ Token.SubtractPrefix $> (Types.Subtract, choice [ token_ Token.And
+                                                                  , token_ Token.From
+                                                                  ])
          ]
 
 infixOperator :: Parser Types.BinaryOperator
 infixOperator = choice [ token_ Token.And      $> Types.Add
                        , token_ Token.AddInfix $> Types.Add
+                       , token_ Token.SubtractInfix $> Types.Subtract
                        ]

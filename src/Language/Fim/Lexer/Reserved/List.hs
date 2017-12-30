@@ -43,9 +43,14 @@ reservedWordList = [ "Dear"
                    , "become"
                    , "becomes"
                    -- Binary Arithmatic Operators
+                   -- Addition
                    , "add"
                    , "plus"
                    , "and"
-                   , "added"
-                   , "to"
+                   , "added to"
+                   , "minus"
+                   , "without"
+                   , "subtract"
+                   , "the difference between"
+                   , "from"
                    ]

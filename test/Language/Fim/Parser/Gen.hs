@@ -278,17 +278,26 @@ genInfixVerb opr = case opr of
                      , "and"
                      , "added to"
                      ]
+  Subtract -> Gen.element [ "minus"
+                          , "without"
+                          ]
 
 genPrefixVerb :: BinaryOperator -> Gen T.Text
 genPrefixVerb opr = case opr of
   Add -> pure "add"
+  Subtract -> Gen.element [ "subtract"
+                          , "the difference between"
+                          ]
 
 genPrefixConjuction :: BinaryOperator -> Gen T.Text
 genPrefixConjuction opr = case opr of
   Add -> pure "and"
+  Subtract -> Gen.element [ "and"
+                          , "from"
+                          ]
 
 genBinaryOperator :: Gen BinaryOperator
-genBinaryOperator = Gen.element [ Add ]
+genBinaryOperator = Gen.element [ Add, Subtract ]
 
 --------------
 -- Literals --

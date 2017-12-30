@@ -96,10 +96,18 @@ lexToken' = choice
            ] $> Token.StringType
 
   , rstring R_and $> Token.And
-  , choice [ astring "added to"
+  , choice [ rstring R_added_to
            , rstring R_plus
            ] $> Token.AddInfix
-  , astring "add" $> Token.AddPrefix
+  , rstring R_add $> Token.AddPrefix
+
+  , choice [ rstring R_minus
+           , rstring R_without
+           ] $> Token.SubtractInfix
+  , choice [ rstring R_subtract
+           , rstring R_the_difference_between
+           ] $> Token.SubtractPrefix
+  , rstring R_from $> Token.From
 
   , choice [ rstring R_the
            , rstring R_an

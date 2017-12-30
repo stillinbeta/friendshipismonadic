@@ -49,6 +49,9 @@ data Token = ClassStart
            | And
            | AddPrefix
            | AddInfix
+           | SubtractInfix
+           | SubtractPrefix
+           | From
            deriving (Show, Eq)
 
 -- Only match on types
