@@ -3,8 +3,8 @@ module Language.Fim.Lexer ( lexTokens
                           , LexStream
                           ) where
 
-import Language.Fim.Parser.Tokens (reservedWordList)
 import qualified Language.Fim.Lexer.Token as Token
+import Language.Fim.Lexer.Reserved (ReservedWords(..), toString, reservedWordList)
 
 import Control.Monad (void, when)
 import Data.Functor (($>))
@@ -37,20 +37,23 @@ lexToken = (,) <$> getPosition <*> lexToken'
 astring :: String -> Parser String
 astring = try . string
 
+rstring :: ReservedWords -> Parser String
+rstring = astring . toString
+
 lexToken' :: Parser Token.Token
 lexToken' = choice
-  [ astring "Dear" $> Token.ClassStart -- prefix of Did you Know
+  [ rstring R_Dear $> Token.ClassStart -- prefix of Did you Know
   , astring "Your faithful student," $> Token.ClassEnd
 
-  , astring "Today" $> Token.MainMethod -- prefix of That's all about
-  , astring "I" $> Token.I
-  , astring "learned" $> Token.MethodDec -- prefix of letter
+  , rstring R_Today $> Token.MainMethod -- prefix of That's all about
+  , rstring R_I $> Token.I
+  , rstring R_learned $> Token.MethodDec -- prefix of letter
   , astring "That's all about" $> Token.MethodDecEnd
 
-  , choice [ astring "said"
-           , astring "wrote"
-           , astring "sang"
-           , astring "thought"
+  , choice [ rstring R_said
+           , rstring R_wrote
+           , rstring R_sang
+           , rstring R_thought
            ] $> Token.OutputVerb
 
   , Token.NumberLiteral <$> numberLiteral
@@ -67,40 +70,40 @@ lexToken' = choice
   , newline  $> Token.Newline
 
   , astring "Did you know that" $> Token.VariableDec
-  , astring "is" $> Token.Is
-  , astring "are" $> Token.Are
-  , choice [ astring "was"
-           , astring "has"
-           , astring "had"
-           , astring "liked"
+  , rstring R_is $> Token.Is
+  , rstring R_are $> Token.Are
+  , choice [ rstring R_was
+           , rstring R_has
+           , rstring R_had
+           , rstring R_liked
            ] $> Token.VariableVerb
-  , astring "always" $> Token.VariableConstant
-  , astring "now" $> Token.Now
-  , choice [ astring "likes"
-           , astring "like"
+  , rstring R_always $> Token.VariableConstant
+  , rstring R_now $> Token.Now
+  , choice [ rstring R_likes
+           , rstring R_like
            ] $> Token.Like
-  , choice [ astring "becomes"
-           , astring "become"
+  , choice [ rstring R_becomes
+           , rstring R_become
            ] $> Token.Become
-  , astring "number" $> Token.NumberType
-  , choice [ astring "letter"
-           , astring "character"] $> Token.CharacterType
-  , choice [ astring "word"
-           , astring "phrase"
-           , astring "sentence"
-           , astring "quote"
-           , astring "name"
+  , rstring R_number $> Token.NumberType
+  , choice [ rstring R_letter
+           , rstring R_character] $> Token.CharacterType
+  , choice [ rstring R_word
+           , rstring R_phrase
+           , rstring R_sentence
+           , rstring R_quote
+           , rstring R_name
            ] $> Token.StringType
 
-  , astring "and" $> Token.And
+  , rstring R_and $> Token.And
   , choice [ astring "added to"
-           , astring "plus"
+           , rstring R_plus
            ] $> Token.AddInfix
   , astring "add" $> Token.AddPrefix
 
-  , choice [ astring "the"
-           , astring "an"
-           , astring "a"
+  , choice [ rstring R_the
+           , rstring R_an
+           , rstring R_a
            ] $> Token.Article
 
   , Token.Identifier <$> identifier1

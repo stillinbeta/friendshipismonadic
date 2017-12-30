@@ -5,7 +5,7 @@ module Language.Fim.Parser.Gen ( genClass
                                ) where
 
 import Language.Fim.Types
-import Language.Fim.Parser.Tokens (reservedWordList)
+import Language.Fim.Internal (reservedWordList)
 
 import Control.Applicative ((<|>))
 import qualified Data.Text as T
