@@ -28,8 +28,18 @@ stack test
 
 ### What works
 
-* Outputting literals
+* Character, Number, and String literals
+* Assigning to/reading from variables
+* Arithmatic Operators
 
 ### What doesn't work
 
-* Everything else
+* Boolean literals/variables
+* Branching Statements
+* Loops
+* Calling Methods/Classes
+* Inheritence
+* Interfaces
+* Increment/Decrement
+* User Input
+* Comments
