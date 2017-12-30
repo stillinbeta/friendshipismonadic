@@ -25,3 +25,5 @@ boxLiteral literal = case literal of
   StringLiteral    {slValue = s} -> StringBox s
   NumberLiteral    {nlValue = d} -> NumberBox d
   CharacterLiteral {clValue = c} -> CharacterBox c
+  BooleanLiteral   {blValue = b} -> BooleanBox b
+  NullLiteral                    -> NullBox

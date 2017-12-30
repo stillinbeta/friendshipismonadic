@@ -7,6 +7,7 @@ import Language.Fim.Types
 import Language.Fim.Eval.Types (VariableBox(..), ValueBox(..), boxLiteral)
 
 import Prelude hiding (putStrLn)
+import Control.Applicative ((<|>))
 import Control.Monad.State.Class
 import Control.Monad.State (runStateT)
 import Control.Monad.Error.Class
@@ -50,14 +51,15 @@ evalStatement o@Output{} = do
   liftIO . putStrLn . printableLiteral $ box
 evalStatement d@Declaration{} = do
   box <- maybe (pure NullBox) evalValue (declareVal d)
-  let vname = vName . declareName $ d
+  let var = declareName d
+  let vname = vName var
   -- TODO: hang on to version information
-  checkType box (declareType d) vname
-  -- Get a type from the box, if we don't have one already
-  let typ = fromMaybe (typeForBox box) (declareType d)
+  checkType box (declareType d) var
+  -- Try to get a type from the box, if we don't have one already
+  let typ = (declareType d) <|> (typeForBox box)
   let vbox = VariableBox { vboxValue = box
                          , vboxIsConstant = declareIsConstant d
-                         , vboxType = Just typ
+                         , vboxType = typ
                          }
   m <- gets variables
   when
@@ -68,18 +70,19 @@ evalStatement d@Declaration{} = do
   let m' = Map.insert vname vbox m
   modify $ \s -> s {variables = m' }
 evalStatement a@Assignment{} = do
-  let aname = vName . assignmentName $ a
-  mvar <- gets $ Map.lookup aname . variables
+  let aVar =  assignmentName a
+  let aVarName = vName aVar
+  mvar <- gets $ Map.lookup aVarName . variables
   case mvar of
-    Nothing -> throwError $ T.concat ["Undefined variable ", aname]
+    Nothing -> throwError $ T.concat ["Undefined variable ", showVariable aVar ]
     Just var -> do
       when (vboxIsConstant var) $
         throwError $ T.concat [ "can't redefine constant "
-                              , aname ]
+                              , showVariable aVar ]
       m <- gets variables
       box <- evalValue $ assignmentExpr a
-      checkType box (vboxType var) aname
-      let m' = Map.insert aname (var { vboxValue = box }) m
+      checkType box (vboxType var) aVar
+      let m' = Map.insert aVarName (var { vboxValue = box }) m
       modify $ \s -> s { variables = m' }
 
 evalValue :: (Evaluator m) => Value -> m ValueBox
@@ -112,40 +115,43 @@ numberOrError v = throwError $ T.intercalate " " ["expected"
                                                  , T.pack . show $ v
                                                  , "to be a number"]
 
-checkType :: (Evaluator m) => ValueBox -> Maybe Type -> T.Text -> m ()
-checkType box typ varName =
+checkType :: (Evaluator m) => ValueBox -> Maybe Type -> Variable -> m ()
+checkType box typ var =
   case (box, typ) of
     (_, Nothing) -> return ()
-    (NumberBox{}, Just TNumber) -> return ()
-    (StringBox{}, Just TString) -> return ()
+    (NumberBox{},    Just TNumber)    -> return ()
+    (StringBox{},    Just TString)    -> return ()
     (CharacterBox{}, Just TCharacter) -> return ()
+    (BooleanBox{},   Just TBoolean)   -> return ()
     (NullBox, _) -> return ()
-    (_, Just typ') -> throwError $ T.concat ["Can't assign "
-                                            , boxTypeName box
-                                            , " to variable "
-                                            , varName
-                                            , " of type "
-                                            , typeName typ'
-                                            ]
+    (_, Just typ') -> throwError $
+      T.intercalate " " ["Can't assign"
+                        , boxTypeName box
+                        , "to variable"
+                        , showVariable var
+                        , "of type"
+                        , typeName typ'
+                        ]
 
-typeForBox :: ValueBox -> Type
+typeForBox :: ValueBox -> Maybe Type
 typeForBox box = case box of
-  NumberBox{}    -> TNumber
-  StringBox{}    -> TString
-  CharacterBox{} -> TCharacter
+  NumberBox{}    -> Just TNumber
+  StringBox{}    -> Just TString
+  CharacterBox{} -> Just TCharacter
+  BooleanBox{}   -> Just TBoolean
+  NullBox{}      -> Nothing
   -- TODO
-  NullBox{}      -> undefined
-  BooleanBox{}   -> undefined
   ArrayBox{}     -> undefined
 
 boxTypeName :: ValueBox -> T.Text
-boxTypeName = typeName . typeForBox
+boxTypeName = maybe "nothing" typeName . typeForBox
 
 typeName :: Type -> T.Text
 typeName typ = case typ of
   TNumber    -> "number"
   TString    -> "string"
   TCharacter -> "character"
+  TBoolean   -> "argument"
 
 lookupVariable :: (MonadState EvalState m, MonadError T.Text m) => Variable -> m ValueBox
 lookupVariable v= do
@@ -153,15 +159,20 @@ lookupVariable v= do
   maybeVal <- gets $ Map.lookup varName . variables
   case maybeVal of
     Just val -> return $ vboxValue val
-    Nothing -> throwError $ T.concat ["undefined variable ", varName]
+    Nothing -> throwError $ T.concat ["undefined variable ", showVariable v]
+
+showVariable :: Variable -> T.Text
+showVariable Variable {vName = v} = T.concat ["<", v, ">"]
 
 printableLiteral ::  ValueBox -> T.Text
 printableLiteral literal =
   case literal of
-    StringBox s -> s
-    NumberBox num -> T.pack . showNumber $ num
+    StringBox s    -> s
+    NumberBox num  -> T.pack . showNumber $ num
     CharacterBox c -> T.singleton c
-    NullBox -> "nothing"
+    BooleanBox b   -> if b then "true" else "false"
+    NullBox        -> "nothing"
+    ArrayBox _     -> undefined
 
 -- Output integral-ish numbers without trailing zeros
 showNumber :: Double -> String

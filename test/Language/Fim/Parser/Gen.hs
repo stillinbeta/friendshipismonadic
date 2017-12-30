@@ -157,16 +157,17 @@ genDeclarationNothingTyped = do
 genDeclarationLiteralTyped :: Gen (WithText (Maybe Value), Maybe Type)
 genDeclarationLiteralTyped = do
   article <- Gen.element ["", "the ", "a "]
-  lit <- genLiteral
-  let (gen, typ) = case s lit of
-            NumberLiteral{} ->    (genNumberNoun, pure TNumber)
-            StringLiteral{} ->    (genStringNoun, pure TString)
-            CharacterLiteral{} -> (genCharNoun, pure TCharacter)
-  noun <- gen
-  return (WithText
-          (Just VLiteral { vLiteral = s lit})
-          (T.concat [article , noun, " ", p lit])
-         , typ)
+  (litGen, nounGen, typ) <- Gen.element
+    [ (genNumberLiteral,    genNumberNoun,  TNumber)
+    , (genStringLiteral,    genStringNoun,  TString)
+    , (genCharacterLiteral, genCharNoun,    TCharacter)
+    , (genBooleanLiteral,   genBooleanNoun, TBoolean)
+    ]
+  lit <- litGen <|> genNullLiteral
+  noun <- nounGen
+  let txt = T.concat [article , noun, " ", p lit]
+  return ( WithText (Just VLiteral { vLiteral = s lit}) txt
+         , Just typ)
 
 genDeclarationVariable :: Gen (WithText (Maybe Value), Maybe Type)
 genDeclarationVariable = do
@@ -181,6 +182,9 @@ genStringNoun = Gen.element ["word", "phrase", "sentence", "quote", "name"]
 
 genCharNoun :: Gen T.Text
 genCharNoun = Gen.element ["letter", "character"]
+
+genBooleanNoun :: Gen T.Text
+genBooleanNoun = Gen.element ["argument", "logic"]
 
 
 -----------
@@ -270,7 +274,10 @@ genBinaryOperator = Gen.element [ Add, Subtract, Multiply, Divide ]
 genLiteral :: Gen (WithText Literal)
 genLiteral = Gen.choice [ genCharacterLiteral
                         , genStringLiteral
-                        , genNumberLiteral]
+                        , genNumberLiteral
+                        , genBooleanLiteral
+                        , genNullLiteral
+                        ]
 
 genSingleQuote :: Gen (Char, Char)
 genSingleQuote = Gen.element [('\'', '\''), ('‘', '’')]
@@ -294,6 +301,23 @@ genCharacterLiteral = do
      CharacterLiteral { clValue = char
                       }
      (T.pack [open, char, close])
+
+genNullLiteral :: Gen (WithText Literal)
+genNullLiteral = pure $ WithText NullLiteral "nothing"
+
+genBooleanLiteral :: Gen (WithText Literal)
+genBooleanLiteral = wtLift BooleanLiteral <$>
+  Gen.choice [ WithText True  <$> Gen.element [ "yes"
+                                              , "true"
+                                              , "right"
+                                              , "correct"
+                                              ]
+             , WithText False <$> Gen.element [ "no"
+                                              , "false"
+                                              , "wrong"
+                                              , "incorrect"
+                                              ]
+             ]
 
 genStringLiteral :: Gen (WithText Literal)
 genStringLiteral = do

@@ -6,6 +6,18 @@ reservedWordList = [ "Dear"
                    , "Today"
                    , "I"
                    , "learned"
+                   -- literals
+                   , "nothing"
+
+                   , "yes"
+                   , "true"
+                   , "right"
+                   , "correct"
+
+                   , "no"
+                   , "false"
+                   , "wrong"
+                   , "incorrect"
                    -- declare
                    , "Did"
                    , "you"
@@ -38,6 +50,8 @@ reservedWordList = [ "Dear"
                    , "sentence"
                    , "quote"
                    , "name"
+                   , "logic"
+                   , "argument"
                    -- modification verbs
                    , "now"
                    , "become"

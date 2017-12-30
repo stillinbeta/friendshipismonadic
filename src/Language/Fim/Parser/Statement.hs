@@ -76,6 +76,7 @@ declarationType :: Parser Types.Type
 declarationType = choice [ token_ Token.NumberType    $> Types.TNumber
                          , token_ Token.CharacterType $> Types.TCharacter
                          , token_ Token.StringType    $> Types.TString
+                         , token_ Token.BooleanType   $> Types.TBoolean
                          ]
 
 -- Assignment --

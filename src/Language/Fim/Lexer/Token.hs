@@ -21,6 +21,9 @@ data Token = ClassStart
            | StringLiteral T.Text
            | CharLiteral Char
            | NumberLiteral Double
+           | NullLiteral
+           | TrueLiteral
+           | FalseLiteral
            -- Punctuation
            | QuestionMark
            | ExclamationPoint
@@ -35,9 +38,12 @@ data Token = ClassStart
            | VariableVerb
            | Article
            | VariableConstant
+           -- Types
            | NumberType
            | StringType
            | CharacterType
+           | BooleanType
+           -- Verbs
            | Is
            | Are
            | Now

@@ -55,7 +55,7 @@ main = hspec $ do
       capture (Fim.run program) `shouldReturn` ("Hello, Equestria!\n", Nothing)
     it "should throw errors for unknown variables" $ do
       let program = wrapBoilerplate "I sang Hello Equestria!\n"
-      Fim.run program `shouldOutputToStderr` "undefined variable Hello Equestria\n"
+      Fim.run program `shouldOutputToStderr` "undefined variable <Hello Equestria>\n"
     it "should output from variables" $ do
       let program = wrapBoilerplate
             [text|Did you know that my greeting is the phrase “Hello, Equestria!”?
@@ -75,17 +75,17 @@ main = hspec $ do
               [text|Did you know that Applejack is always the number 17?
                     Applejack becomes 18!
                    |]
-        Fim.run program `shouldOutputToStderr` "can't redefine constant Applejack\n"
+        Fim.run program `shouldOutputToStderr` "can't redefine constant <Applejack>\n"
       it "should error on assigning to undefined variables" $ do
         let program = wrapBoilerplate [text|Fluttershy is now 12.|]
-        Fim.run program `shouldOutputToStderr` "Undefined variable Fluttershy\n"
+        Fim.run program `shouldOutputToStderr` "Undefined variable <Fluttershy>\n"
       it "should error when assigning mixed types" $ do
         let program = wrapBoilerplate
               [text|Did you know that Applejack is the number 17?
                     Applejack becomes "A string"!
                    |]
         Fim.run program `shouldOutputToStderr`
-          "Can't assign string to variable Applejack of type number\n"
+          "Can't assign string to variable <Applejack> of type number\n"
       it "should transfer types across variable declarations" $ do
         let program = wrapBoilerplate
               [text|Did you know that Applejack is the letter 'a'?
@@ -93,7 +93,24 @@ main = hspec $ do
                     Mare Do Well is now "Pinkie Pie"!
                    |]
         Fim.run program `shouldOutputToStderr`
-          "Can't assign string to variable Mare Do Well of type character\n"
+          "Can't assign string to variable <Mare Do Well> of type character\n"
+    describe "literals" $ do
+      it "should support nothing in literals" $ do
+        let program = wrapBoilerplate [text|Did you know that Blueblood is the phrase nothing?
+                                            I said Blueblood!
+                                           |]
+        Fim.run program `shouldOutput` "nothing\n"
+      it "should support boolean literals" $ do
+        let program =
+              wrapBoilerplate [text|Did you know that Rainbow Dash being straight is the argument no?
+                                    I said Rainbow Dash being straight.
+                                   |]
+        Fim.run program `shouldOutput` "false\n"
+      it "should support character literals" $ do
+        let program = wrapBoilerplate [text|Did you know that my favourite is the letter 'T'?
+                                            I sang my favourite!
+                                           |]
+        Fim.run program `shouldOutput` "T\n"
     describe "arithmetic" $ do
       it "should support addition" $ do
         let program = wrapBoilerplate [text|I said 2 and 3 plus 4.25.|]
@@ -125,6 +142,6 @@ wrapBoilerplate t = T.concat [ [text|Dear Princess Celestia: Hello World!
                              , t
                              , [text|That's all about something simple!
 
-                                     Your faithful student, Twilight Sparkle.
+                                     Your faithful student, Beta.
                                      |]
                              ]

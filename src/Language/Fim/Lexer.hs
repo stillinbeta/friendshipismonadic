@@ -40,6 +40,9 @@ astring = try . string
 rstring :: ReservedWords -> Parser String
 rstring = astring . toString
 
+rchoice :: [ReservedWords] -> Parser String
+rchoice = choice . map rstring
+
 lexToken' :: Parser Token.Token
 lexToken' = choice
   [ rstring R_Dear $> Token.ClassStart -- prefix of Did you Know
@@ -50,15 +53,16 @@ lexToken' = choice
   , rstring R_learned $> Token.MethodDec -- prefix of letter
   , astring "That's all about" $> Token.MethodDecEnd
 
-  , choice [ rstring R_said
-           , rstring R_wrote
-           , rstring R_sang
-           , rstring R_thought
-           ] $> Token.OutputVerb
+  , rchoice [ R_said
+            , R_wrote
+            , R_sang
+            , R_thought
+            ] $> Token.OutputVerb
 
   , Token.NumberLiteral <$> numberLiteral
   , Token.CharLiteral   <$> charLiteral
   , Token.StringLiteral <$> stringLiteral
+
 
   , char '?' $> Token.QuestionMark
   , char '!' $> Token.ExclamationPoint
@@ -72,44 +76,47 @@ lexToken' = choice
   , astring "Did you know that" $> Token.VariableDec
   , rstring R_is $> Token.Is
   , rstring R_are $> Token.Are
-  , choice [ rstring R_was
-           , rstring R_has
-           , rstring R_had
-           , rstring R_liked
+  , rchoice [ R_was
+            , R_has
+            , R_had
+            , R_liked
            ] $> Token.VariableVerb
   , rstring R_always $> Token.VariableConstant
   , rstring R_now $> Token.Now
-  , choice [ rstring R_likes
-           , rstring R_like
+  , rchoice [ R_likes
+            , R_like
            ] $> Token.Like
-  , choice [ rstring R_becomes
-           , rstring R_become
-           ] $> Token.Become
+  , rchoice [ R_becomes
+            , R_become
+            ] $> Token.Become
   , rstring R_number $> Token.NumberType
-  , choice [ rstring R_letter
-           , rstring R_character] $> Token.CharacterType
-  , choice [ rstring R_word
-           , rstring R_phrase
-           , rstring R_sentence
-           , rstring R_quote
-           , rstring R_name
-           ] $> Token.StringType
+  , rchoice [ R_letter
+            , R_character] $> Token.CharacterType
+  , rchoice [ R_word
+            , R_phrase
+            , R_sentence
+            , R_quote
+            , R_name
+            ] $> Token.StringType
+  , rchoice [ R_logic
+            , R_argument
+            ] $> Token.BooleanType
 
-  , choice [ rstring R_added_to
-           , rstring R_plus
-           ] $> Token.AddInfix
+  , rchoice [ R_added_to
+            , R_plus
+            ] $> Token.AddInfix
   , rstring R_add $> Token.AddPrefix
 
-  , choice [ rstring R_minus
-           , rstring R_without
-           ] $> Token.SubtractInfix
-  , choice [ rstring R_subtract
-           , rstring R_the_difference_between
-           ] $> Token.SubtractPrefix
+  , rchoice [ R_minus
+            , R_without
+            ] $> Token.SubtractInfix
+  , rchoice [ R_subtract
+            , R_the_difference_between
+            ] $> Token.SubtractPrefix
 
-  , choice [ rstring R_times
-           , rstring R_multiplied_with
-           ] $> Token.MultiplyInfix
+  , rchoice [ R_times
+            , R_multiplied_with
+            ] $> Token.MultiplyInfix
   , rstring R_multiply $> Token.MultiplyPrefix
 
   , rstring R_divided_by $> Token.DivideInfix
@@ -119,10 +126,22 @@ lexToken' = choice
   , rstring R_from $> Token.From
   , rstring R_by $> Token.By
 
-  , choice [ rstring R_the
-           , rstring R_an
-           , rstring R_a
-           ] $> Token.Article
+  , rchoice [ R_the
+            , R_an
+            , R_a
+            ] $> Token.Article
+
+  , rstring R_nothing $> Token.NullLiteral
+  , rchoice [ R_yes
+            , R_true
+            , R_right
+            , R_correct
+            ] $> Token.TrueLiteral
+  , rchoice [ R_no
+            , R_false
+            , R_wrong
+            , R_incorrect
+            ] $> Token.FalseLiteral
 
   , Token.Identifier <$> identifier1
   ]

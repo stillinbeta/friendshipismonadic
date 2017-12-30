@@ -26,7 +26,7 @@ data Function = Function { functionName :: Identifier
                          , functionBody :: [Statement]
                          } deriving (Eq, Show)
 
-data Type = TNumber | TString | TCharacter deriving (Eq, Show)
+data Type = TNumber | TString | TCharacter | TBoolean deriving (Eq, Show)
 
 data Statement = Output { outputValue :: Value
                         }
@@ -55,17 +55,21 @@ newtype Variable = Variable { vName :: T.Text
                             } deriving (Eq, Show)
 
 
-data Literal = StringLiteral { slValue :: T.Text}
-             | NumberLiteral { nlValue :: Double} -- TODO: Supposed to be Float64
-             | CharacterLiteral { clValue :: Char
-                                }
+data Literal = StringLiteral    { slValue :: T.Text }
+             | NumberLiteral    { nlValue :: Double } -- TODO: Supposed to be Float64
+             | CharacterLiteral { clValue :: Char   }
+             | BooleanLiteral   { blValue :: Bool   }
+             | NullLiteral
+
              deriving Show
 
 -- Manually define Eq so our tests don't barf on the doubles
 instance Eq Literal where
-  (StringLiteral val1) == (StringLiteral val2) = val1 == val2
+  (StringLiteral val1)    == (StringLiteral val2)    = val1 == val2
   (CharacterLiteral val1) == (CharacterLiteral val2) = val1 == val2
-  (NumberLiteral n1) == (NumberLiteral n2) = abs (n1 - n2) < 0.00000001
+  (NumberLiteral n1)      == (NumberLiteral n2)      = abs (n1 - n2) < 0.00000001
+  (BooleanLiteral b1)     == (BooleanLiteral b2)     = b1 == b2
+  NullLiteral             == NullLiteral             = True
   _ == _ = False
 
 
