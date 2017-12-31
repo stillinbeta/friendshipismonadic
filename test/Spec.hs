@@ -55,7 +55,7 @@ main = hspec $ do
       capture (Fim.run program) `shouldReturn` ("Hello, Equestria!\n", Nothing)
     it "should throw errors for unknown variables" $ do
       let program = wrapBoilerplate "I sang Hello Equestria!\n"
-      Fim.run program `shouldOutputToStderr` "undefined variable <Hello Equestria>\n"
+      Fim.run program `shouldOutputToStderr` "Undefined variable <Hello Equestria>\n"
     it "should output from variables" $ do
       let program = wrapBoilerplate
             [text|Did you know that my greeting is the phrase “Hello, Equestria!”?
@@ -75,7 +75,7 @@ main = hspec $ do
               [text|Did you know that Applejack is always the number 17?
                     Applejack becomes 18!
                    |]
-        Fim.run program `shouldOutputToStderr` "can't redefine constant <Applejack>\n"
+        Fim.run program `shouldOutputToStderr` "Can't assign to constant <Applejack>\n"
       it "should error on assigning to undefined variables" $ do
         let program = wrapBoilerplate [text|Fluttershy is now 12.|]
         Fim.run program `shouldOutputToStderr` "Undefined variable <Fluttershy>\n"

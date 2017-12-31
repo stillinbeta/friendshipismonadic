@@ -23,6 +23,10 @@ library
                              Language.Fim.Parser
                              Language.Fim.Types
         other-modules:       Language.Fim.Eval.Types
+                             Language.Fim.Eval.Errors
+                             Language.Fim.Eval.Statement
+                             Language.Fim.Eval.Value
+                             Language.Fim.Eval.Util
                              Language.Fim.Lexer
                              Language.Fim.Lexer.Reserved
                              Language.Fim.Lexer.Reserved.List
