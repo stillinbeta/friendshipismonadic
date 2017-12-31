@@ -13,7 +13,6 @@ import Control.Monad.State (runStateT)
 import Control.Monad.Error.Class
 import Control.Monad.Except
 import qualified Data.Map as Map
-import Data.Maybe (fromMaybe)
 import Data.List (find)
 import qualified Data.Text as T
 import Data.Text.IO (putStrLn, hPutStrLn)
@@ -107,13 +106,35 @@ evalBinOp v1 v2 binOp
         Subtract -> n1 - n2
         Multiply -> n1 * n2
         Divide   -> n1 / n2
+        _ -> undefined
+  | isComparison binOp = do
+     ord <- compareBox v1 v2
+     return $ BooleanBox $ case ord of
+       -- rolls eyes at haskell type system
+       LT -> binOp `elem` [NotEqualTo, LessThanOrEqual, LessThan]
+       GT -> binOp `elem` [NotEqualTo, GreaterThanOrEqual, GreaterThan]
+       EQ -> binOp `elem` [EqualTo, LessThanOrEqual, GreaterThanOrEqual]
   | otherwise = undefined
+  where isComparison = (`elem` [EqualTo, NotEqualTo
+                               , GreaterThan, GreaterThanOrEqual
+                               , LessThan, LessThanOrEqual])
 
 numberOrError :: (Evaluator m) => ValueBox -> m Double
 numberOrError (NumberBox n) = pure n
-numberOrError v = throwError $ T.intercalate " " ["expected"
-                                                 , T.pack . show $ v
-                                                 , "to be a number"]
+numberOrError v = throwError $
+  T.intercalate " " ["expected" , T.pack . show $ v , "to be a number"]
+
+compareBox :: (Evaluator m) => ValueBox -> ValueBox -> m Ordering
+compareBox v1 v2 =
+  case (v1, v2) of
+    (NullBox, _) -> throwError "can't compare null"
+    (_, NullBox) -> throwError "can't compare null"
+    (NumberBox n1,    NumberBox n2)    -> pure (n1 `compare` n2)
+    (CharacterBox c1, CharacterBox c2) -> pure (c1 `compare` c2)
+    (StringBox s1,    StringBox s2)    -> pure (s1 `compare` s2)
+    (BooleanBox b1,   BooleanBox b2)   -> pure (b1 `compare` b2)
+    (_, _) -> pure (printableLiteral v1 `compare` printableLiteral v2)
+
 
 checkType :: (Evaluator m) => ValueBox -> Maybe Type -> Variable -> m ()
 checkType box typ var =

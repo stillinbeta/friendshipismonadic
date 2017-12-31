@@ -36,7 +36,7 @@ data Token = ClassStart
            -- Variables
            | VariableDec
            | Article
-           | VariableConstan
+           | VariableConstant
            -- Types
            | NumberType
            | StringType

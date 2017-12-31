@@ -124,6 +124,30 @@ main = hspec $ do
       it "should support division" $ do
         let program = wrapBoilerplate [text|I said divide 81 by 9!|]
         Fim.run program `shouldOutput` "9\n"
+    describe "comparisons" $ do
+      it "should support equal to" $ do
+        let program = wrapBoilerplate [text|I sang "Applejack" is "Bad"!|]
+        Fim.run program `shouldOutput` "false\n"
+      it "should support not equal to" $ do
+        let program = wrapBoilerplate [text|I said "blueblood" isn't "good"!|]
+        Fim.run program `shouldOutput` "true\n"
+      it "should support greater than to" $ do
+        let program = wrapBoilerplate [text|I said 'd' is more than 'a'?|]
+        Fim.run program `shouldOutput` "true\n"
+      it "should support greater than or equal to" $ do
+        let program = wrapBoilerplate [text|I thought 'c' isn't less than 'a':|]
+        Fim.run program `shouldOutput` "true\n"
+      it "should support greater than to" $ do
+        let program = wrapBoilerplate [text|I said 'd' is less than 'a'?|]
+        Fim.run program `shouldOutput` "false\n"
+      it "should support greater than or equal to" $ do
+        let program = wrapBoilerplate [text|I thought 17 is no more than 18:|]
+        Fim.run program `shouldOutput` "true\n"
+      it "should support heterogenus comparisons" $ do
+        let program = wrapBoilerplate [text|I thought 't' is "t"!|]
+        Fim.run program `shouldOutput` "true\n"
+        let program = wrapBoilerplate [text|I thought 19 isn't "a number"?|]
+        Fim.run program `shouldOutput` "true\n"
 
 shouldOutput :: IO (Maybe String) -> String -> Expectation
 shouldOutput io str =
@@ -132,7 +156,6 @@ shouldOutput io str =
 shouldOutputToStderr :: IO (Maybe String) -> String -> Expectation
 shouldOutputToStderr io str =
   hCapture [stderr] io `shouldReturn` (str, Nothing)
-
 
 wrapBoilerplate :: T.Text -> T.Text
 wrapBoilerplate t = T.concat [ [text|Dear Princess Celestia: Hello World!

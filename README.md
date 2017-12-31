@@ -22,7 +22,7 @@ fim examples/helloworld.fim
 ## Run tests
 ```shell
 stack test
-``**
+```
 
 ## Status
 
@@ -31,10 +31,10 @@ stack test
 * Boolean, Character, Number, and String literals
 * Assigning to/reading from variables
 * Arithmatic Operators
+* Comparison Operators
 
 ### What doesn't work
 
-* Comparison Operators
 * Branching Statements
 * Loops
 * Calling Methods/Classes
