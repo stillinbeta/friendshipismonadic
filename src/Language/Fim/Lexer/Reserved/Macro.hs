@@ -22,9 +22,6 @@ makeToString str = let name = makeName str
                        lit = LitE $ StringL str in
                        Clause [ConP name []] (NormalB lit ) []
 
-underscore :: String -> String
-underscore = intercalate "_" . words
-
 toString :: Name
 toString = mkName "toString"
 
@@ -32,4 +29,6 @@ makeCon :: String -> Con
 makeCon = flip NormalC [] . makeName
 
 makeName :: String -> Name
-makeName = mkName . underscore . ("R_"++)
+makeName = mkName . removeApostrophe . underscore . ("R_"++)
+  where underscore = intercalate "_" . words
+        removeApostrophe = filter (/='\'')

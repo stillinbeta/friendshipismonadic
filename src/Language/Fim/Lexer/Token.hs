@@ -65,11 +65,16 @@ data Token = ClassStart
            | DivideInfix
            | DividePrefix
            -- Comparison
+           | Nt
            | Not
            | No
            | Than
            | Less
            | More
+           -- Boolean logic
+           | Either
+           | Or
+           | NotTheCase
            deriving (Show, Eq)
 
 -- Only match on types, not wrapped value

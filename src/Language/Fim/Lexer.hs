@@ -125,15 +125,18 @@ lexToken' = choice
   , rstring R_divide $> Token.DividePrefix
   -- Comparisons
   -- not reserved because they always appear after a non-variable
-  , choice [ astring "n't"
-           , astring "not"
-           ] $> Token.Not
+  , astring "n't" $> Token.Nt
+  , astring "not" $> Token.Not
   , astring "no" $> Token.No
   , astring "than" $> Token.Than
   , astring "less" $> Token.Less
   , choice [ astring "more"
            , astring "greater"
            ] $> Token.More
+  -- Boolean
+  , rstring R_either $> Token.Either
+  , rstring R_or $> Token.Or
+  , rstring R_its_not_the_case_that $> Token.NotTheCase
 
   -- Utility articles and such
   , rstring R_and $> Token.And
@@ -150,8 +153,7 @@ lexToken' = choice
             , R_right
             , R_correct
             ] $> Token.TrueLiteral
-  , rchoice [ R_no
-            , R_false
+  , rchoice [ R_false
             , R_wrong
             , R_incorrect
             ] $> Token.FalseLiteral

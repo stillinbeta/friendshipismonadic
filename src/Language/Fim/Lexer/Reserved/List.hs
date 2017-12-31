@@ -76,4 +76,9 @@ reservedWordList = [ "Dear"
                    , "divided by"
                    , "divide"
                    , "by"
+                   -- Boolean Logic
+                   , "or"
+                   , "either"
+                   , "not"
+                   , "it's not the case that"
                    ]

@@ -205,18 +205,24 @@ genExpr :: Gen (WithText Value)
 genExpr = Gen.recursive
   Gen.choice
   [ genShallowValue ]
-  -- Parser is left-greedy
-  [ Gen.subtermM2 genShallowValue genExpr makeBinaryOperator]
+  -- Parser is left-greedy, so make left value shallow
+  [ Gen.subtermM2 genShallowValue genExpr makeBinaryOperator
+  , Gen.subtermM  genExpr genUnaryOperator
+  ]
 
 makeBinaryOperator :: WithText Value -> WithText Value -> Gen (WithText Value)
-makeBinaryOperator e1 e2 = do
+makeBinaryOperator e1 e2 =
   Gen.choice [ genInfixBinaryOperator e1 e2
              , genPrefixBinaryOperator e1 e2
              ]
 
 genInfixBinaryOperator :: WithText Value -> WithText Value -> Gen (WithText Value)
 genInfixBinaryOperator v1 v2 = do
-  (opr, genInfx)  <- genInfixOpr
+  -- EqualTo (Not ...) parses as NotEqualTo (...)
+  (opr, genInfx)  <- case v2 of
+                       WithText VUnaryOperation { vUnOpr = Not } _ ->
+                         Gen.filter notEqualTo genInfixOpr
+                       _ -> genInfixOpr
   infx <- genInfx
   let vbin = VBinaryOperation { vBinArg1 = s v1
                               , vBinOpr  = opr
@@ -224,6 +230,8 @@ genInfixBinaryOperator v1 v2 = do
                               }
   let text =  T.intercalate " " [p v1 , infx, p v2]
   return $ WithText vbin text
+  where
+    notEqualTo = (/=EqualTo) . fst
 
 genPrefixBinaryOperator :: WithText Value -> WithText Value -> Gen (WithText Value)
 genPrefixBinaryOperator v1 v2 = do
@@ -265,6 +273,7 @@ genInfixOpr =
               , (GreaterThanOrEqual,   do cmp <- genComparator
                                           negation <- genNegationWithNo
                                           return $ T.concat [cmp, negation, "less than"])
+              , (Or, pure "or")
               ]
   where
     genNegation = Gen.element [" not", "n't"]
@@ -291,7 +300,24 @@ genPrefixVerbConj =
                 , pure "divide"
                 , Gen.element [ "and", "by" ]
                 )
+              , ( Xor
+                , pure "either"
+                , pure "or"
+                )
               ]
+
+genUnaryOperator :: (WithText Value) -> Gen (WithText Value)
+genUnaryOperator val = do
+  (opr, genPrefix) <- Gen.element [ (Not, Gen.element [ "not"
+                                                      , "it's not the case that"
+                                                      ])
+                                  ]
+  prefix <- genPrefix
+  let typ = VUnaryOperation { vUnArg = s val
+                           , vUnOpr = opr
+                           }
+  let text = T.intercalate " " [prefix, p val]
+  return $ WithText typ text
 
 --------------
 -- Literals --

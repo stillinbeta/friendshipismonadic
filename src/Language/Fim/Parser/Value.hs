@@ -12,11 +12,13 @@ import Text.Parsec ((<?>), (<|>), try)
 
 value :: Parser Types.Value
 value = choice [ shallowPrefix
+               , unaryOperator
                , binaryOperatorPrefix
                ]
 
 greedyValue :: Parser Types.Value
 greedyValue = choice [ shallowValue
+                     , unaryOperator
                      , binaryOperatorPrefix
                      , shallowValue >>= binaryOperatorInfix
                      ]
@@ -28,6 +30,17 @@ shallowPrefix = do
   choice [ binaryOperatorInfix val
          , pure val
          ]
+
+unaryOperator :: Parser Types.Value
+unaryOperator = do
+  opr <- choice [ choice [ token_ Token.Not
+                         , token_ Token.NotTheCase
+                         ] $> Types.Not
+                ]
+  val <- value
+  return Types.VUnaryOperation { Types.vUnArg = val
+                               , Types.vUnOpr = opr
+                               }
 
 variable :: Parser Types.Variable
 variable = do
@@ -68,8 +81,8 @@ prefixOperator =
          , token_ Token.MultiplyPrefix $> (Types.Multiply, token_  Token.And)
          , token_ Token.DividePrefix   $> (Types.Divide, choice [ token_ Token.And
                                                                 , token_ Token.By
-                                                                ]
-                                          )
+                                                                ])
+         , token_ Token.Either         $> (Types.Xor, token_ Token.Or)
          ]
 
 infixOperator :: Parser Types.BinaryOperator
@@ -78,6 +91,7 @@ infixOperator = choice [ token_ Token.And           $> Types.Add
                        , token_ Token.SubtractInfix $> Types.Subtract
                        , token_ Token.MultiplyInfix $> Types.Multiply
                        , token_ Token.DivideInfix   $> Types.Divide
+                       , token_ Token.Or            $> Types.Or
                        , comparisonOperators
                        ]
 
@@ -87,13 +101,14 @@ comparisonOperators = do
          , token_ Token.WasHad
          ]
   -- don't consume a Not then fail
-  choice [ try (neg >> moreThan)  $> Types.LessThanOrEqual
-         , try (neg >> lessThan)  $> Types.GreaterThanOrEqual
-         , token_ Token.Not $> Types.NotEqualTo
+  choice [ try (neg' >> moreThan)  $> Types.LessThanOrEqual
+         , try (neg' >> lessThan)  $> Types.GreaterThanOrEqual
+         , neg              $> Types.NotEqualTo
          , moreThan         $> Types.GreaterThan
          , lessThan         $> Types.LessThan
          , pure                Types.EqualTo
          ]
-  where neg = token_ Token.Not <|> token_ Token.No
+  where neg = token_ Token.Not <|> token_ Token.Nt
+        neg' = neg <|> token_ Token.No
         moreThan = token_ Token.More >> token_ Token.Than
         lessThan = token_ Token.Less >> token_ Token.Than

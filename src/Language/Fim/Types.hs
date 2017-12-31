@@ -3,6 +3,7 @@ module Language.Fim.Types ( Class(..)
                           , Statement(..)
                           , Value(..)
                           , BinaryOperator(..)
+                          , UnaryOperator(..)
                           , Literal(..)
                           , StringQuote(..)
                           , Identifier(..)
@@ -46,14 +47,21 @@ data Value = VLiteral { vLiteral :: Literal}
                               , vBinOpr  :: BinaryOperator
                               , vBinArg2 :: Value
                               }
+           | VUnaryOperation { vUnArg :: Value
+                            , vUnOpr :: UnaryOperator
+                            }
            deriving (Eq, Show)
 
 data BinaryOperator = Add | Subtract | Multiply | Divide
                     | EqualTo | NotEqualTo
                     | LessThan    | LessThanOrEqual
                     | GreaterThan | GreaterThanOrEqual
-
+                    -- Add doubles as boolean and
+                    | Or | Xor
                     deriving (Eq, Show)
+
+data UnaryOperator = Not
+                   deriving (Eq, Show)
 
 newtype Variable = Variable { vName :: T.Text
                             } deriving (Eq, Show)
