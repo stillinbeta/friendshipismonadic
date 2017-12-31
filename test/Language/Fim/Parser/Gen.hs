@@ -245,20 +245,12 @@ genPrefixBinaryOperator v1 v2 = do
   let text = T.intercalate " " [prefix, p v1, conj, p v2]
   return $ WithText vbin text
 
--- TODO there's gotta be a better way
 genInfixOpr :: Gen (BinaryOperator, Gen T.Text)
 genInfixOpr =
-  Gen.element [ (Add,  Gen.element [ "plus"
-                                   , "and"
-                                   , "added to"
-                                   ])
-              , (Subtract, Gen.element [ "minus"
-                                         , "without"
-                                         ])
-              , (Multiply, Gen.element [ "times"
-                                       , "multiplied with"
-                                       ])
-              , (Divide,     pure "divided by")
+  Gen.element [ (Add,      Gen.element [ "plus" , "added to"])
+              , (Subtract, Gen.element [ "minus" , "without"])
+              , (Multiply, Gen.element [ "times" , "multiplied with"])
+              , (Divide,   pure "divided by")
 
               , (EqualTo,              genComparator)
               , (NotEqualTo,           T.append <$> genComparator <*> genNegation)
@@ -273,7 +265,8 @@ genInfixOpr =
               , (GreaterThanOrEqual,   do cmp <- genComparator
                                           negation <- genNegationWithNo
                                           return $ T.concat [cmp, negation, "less than"])
-              , (Or, pure "or")
+              , (And, pure "and")
+              , (Or,  pure "or")
               ]
   where
     genNegation = Gen.element [" not", "n't"]
