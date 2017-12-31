@@ -39,8 +39,9 @@ output = do
 
 variableVerb :: Parser ()
 variableVerb = tokenChoice_ [ Token.Is
-                            , Token.VariableVerb
+                            , Token.WasHad
                             , Token.Like
+                            , Token.Liked
                             ]
 
 declaration :: Parser Types.Statement

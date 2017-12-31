@@ -8,7 +8,7 @@ import Language.Fim.Parser.Literal (literal)
 
 import Data.Functor (($>))
 import Text.Parsec.Combinator (choice)
-import Text.Parsec ((<?>))
+import Text.Parsec ((<?>), (<|>), try)
 
 value :: Parser Types.Value
 value = choice [ shallowPrefix
@@ -38,14 +38,6 @@ shallowValue :: Parser Types.Value
 shallowValue =  choice [ Types.VLiteral  <$> literal  <?> "literal"
                        , Types.VVariable <$> variable <?> "variable"
                        ]
-
--- variable :: Parser Types.Variable
--- variable =
---   Types.Variable . T.pack <$> manyTill anyChar endOfVariable
-
--- Voids needed inline to bring types into alignment
--- endOfVariable :: Parser ()
--- endOfVariable = lookAhead $ void terminator <|> void reservedWords
 
 binaryOperatorInfix :: Types.Value -> Parser Types.Value
 binaryOperatorInfix expr1 = do
@@ -86,4 +78,22 @@ infixOperator = choice [ token_ Token.And           $> Types.Add
                        , token_ Token.SubtractInfix $> Types.Subtract
                        , token_ Token.MultiplyInfix $> Types.Multiply
                        , token_ Token.DivideInfix   $> Types.Divide
+                       , comparisonOperators
                        ]
+
+comparisonOperators :: Parser Types.BinaryOperator
+comparisonOperators = do
+  choice [ token_ Token.Is
+         , token_ Token.WasHad
+         ]
+  -- don't consume a Not then fail
+  choice [ try (neg >> moreThan)  $> Types.LessThanOrEqual
+         , try (neg >> lessThan)  $> Types.GreaterThanOrEqual
+         , token_ Token.Not $> Types.NotEqualTo
+         , moreThan         $> Types.GreaterThan
+         , lessThan         $> Types.LessThan
+         , pure                Types.EqualTo
+         ]
+  where neg = token_ Token.Not <|> token_ Token.No
+        moreThan = token_ Token.More >> token_ Token.Than
+        lessThan = token_ Token.Less >> token_ Token.Than

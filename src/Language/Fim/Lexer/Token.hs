@@ -35,9 +35,8 @@ data Token = ClassStart
            | Interrobang
            -- Variables
            | VariableDec
-           | VariableVerb
            | Article
-           | VariableConstant
+           | VariableConstan
            -- Types
            | NumberType
            | StringType
@@ -47,7 +46,9 @@ data Token = ClassStart
            | Is
            | Are
            | Now
+           | WasHad
            | Like
+           | Liked
            | Become
            -- Interaction
            | OutputVerb
@@ -63,9 +64,15 @@ data Token = ClassStart
            | MultiplyPrefix
            | DivideInfix
            | DividePrefix
+           -- Comparison
+           | Not
+           | No
+           | Than
+           | Less
+           | More
            deriving (Show, Eq)
 
--- Only match on types
+-- Only match on types, not wrapped value
 teq :: Token -> Token -> Bool
 teq t1 t2 = case (t1, t2) of
   (Identifier{}, Identifier{}) ->       True
@@ -74,8 +81,7 @@ teq t1 t2 = case (t1, t2) of
   (NumberLiteral{}, NumberLiteral{}) -> True
   (_, _) -> t1 == t2
 
--- TODO kinda hacky
-
+-- TODO kinda hacky - for matching on with teq
 tIdentifier :: Token
 tIdentifier = Identifier T.empty
 

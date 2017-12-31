@@ -49,6 +49,10 @@ data Value = VLiteral { vLiteral :: Literal}
            deriving (Eq, Show)
 
 data BinaryOperator = Add | Subtract | Multiply | Divide
+                    | EqualTo | NotEqualTo
+                    | LessThan    | LessThanOrEqual
+                    | GreaterThan | GreaterThanOrEqual
+
                     deriving (Eq, Show)
 
 newtype Variable = Variable { vName :: T.Text

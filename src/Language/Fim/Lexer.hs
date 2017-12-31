@@ -62,6 +62,7 @@ lexToken' = choice
   , Token.NumberLiteral <$> numberLiteral
   , Token.CharLiteral   <$> charLiteral
   , Token.StringLiteral <$> stringLiteral
+  , rstring R_nothing $> Token.NullLiteral
 
 
   , char '?' $> Token.QuestionMark
@@ -79,16 +80,17 @@ lexToken' = choice
   , rchoice [ R_was
             , R_has
             , R_had
-            , R_liked
-           ] $> Token.VariableVerb
+            ] $> Token.WasHad
   , rstring R_always $> Token.VariableConstant
   , rstring R_now $> Token.Now
+  , rstring R_liked $> Token.Liked
   , rchoice [ R_likes
             , R_like
            ] $> Token.Like
   , rchoice [ R_becomes
             , R_become
             ] $> Token.Become
+  -- types
   , rstring R_number $> Token.NumberType
   , rchoice [ R_letter
             , R_character] $> Token.CharacterType
@@ -101,27 +103,39 @@ lexToken' = choice
   , rchoice [ R_logic
             , R_argument
             ] $> Token.BooleanType
-
+  -- add
   , rchoice [ R_added_to
             , R_plus
             ] $> Token.AddInfix
   , rstring R_add $> Token.AddPrefix
-
+  -- minus
   , rchoice [ R_minus
             , R_without
             ] $> Token.SubtractInfix
   , rchoice [ R_subtract
             , R_the_difference_between
             ] $> Token.SubtractPrefix
-
+  --multiply
   , rchoice [ R_times
             , R_multiplied_with
             ] $> Token.MultiplyInfix
   , rstring R_multiply $> Token.MultiplyPrefix
-
+  -- divide
   , rstring R_divided_by $> Token.DivideInfix
   , rstring R_divide $> Token.DividePrefix
+  -- Comparisons
+  -- not reserved because they always appear after a non-variable
+  , choice [ astring "n't"
+           , astring "not"
+           ] $> Token.Not
+  , astring "no" $> Token.No
+  , astring "than" $> Token.Than
+  , astring "less" $> Token.Less
+  , choice [ astring "more"
+           , astring "greater"
+           ] $> Token.More
 
+  -- Utility articles and such
   , rstring R_and $> Token.And
   , rstring R_from $> Token.From
   , rstring R_by $> Token.By
@@ -131,7 +145,6 @@ lexToken' = choice
             , R_a
             ] $> Token.Article
 
-  , rstring R_nothing $> Token.NullLiteral
   , rchoice [ R_yes
             , R_true
             , R_right

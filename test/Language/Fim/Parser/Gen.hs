@@ -7,7 +7,8 @@ module Language.Fim.Parser.Gen ( genClass
 import Language.Fim.Types
 import Language.Fim.Internal (reservedWordList)
 
-import Control.Applicative ((<|>))
+import Control.Applicative ((<|>), unwrapArrow)
+import Control.Monad (join)
 import qualified Data.Text as T
 import Data.Char (isDigit)
 import Text.Printf (printf)
@@ -209,63 +210,88 @@ genExpr = Gen.recursive
 
 makeBinaryOperator :: WithText Value -> WithText Value -> Gen (WithText Value)
 makeBinaryOperator e1 e2 = do
-  opr <- genBinaryOperator
-  txt <- Gen.choice [ genInfixBinaryOperator opr e1 e2
-                    , genPrefixBinaryOperator opr e1 e2
-                    ]
-  let binOp = VBinaryOperation { vBinArg1 = s e1
-                               , vBinOpr = opr
-                               , vBinArg2 = s e2
-                               }
-  return $ WithText binOp txt
+  Gen.choice [ genInfixBinaryOperator e1 e2
+             , genPrefixBinaryOperator e1 e2
+             ]
 
-genInfixBinaryOperator :: BinaryOperator -> WithText Value -> WithText Value -> Gen T.Text
-genInfixBinaryOperator opr v1 v2 = do
-  infixV <- genInfixVerb opr
-  return $ T.intercalate " " [p v1 , infixV, p v2]
+genInfixBinaryOperator :: WithText Value -> WithText Value -> Gen (WithText Value)
+genInfixBinaryOperator v1 v2 = do
+  (opr, genInfx)  <- genInfixOpr
+  infx <- genInfx
+  let vbin = VBinaryOperation { vBinArg1 = s v1
+                              , vBinOpr  = opr
+                              , vBinArg2 = s v2
+                              }
+  let text =  T.intercalate " " [p v1 , infx, p v2]
+  return $ WithText vbin text
 
-genPrefixBinaryOperator :: BinaryOperator -> WithText Value -> WithText Value -> Gen T.Text
-genPrefixBinaryOperator opr v1 v2 = do
-  prefixV <- genPrefixVerb opr
-  prefixC <- genPrefixConjuction opr
-  return $ T.intercalate " " [prefixV, p v1, prefixC, p v2]
+genPrefixBinaryOperator :: WithText Value -> WithText Value -> Gen (WithText Value)
+genPrefixBinaryOperator v1 v2 = do
+  (opr, genPrefix, genConj) <- genPrefixVerbConj
+  prefix <- genPrefix
+  conj <- genConj
+  let vbin = VBinaryOperation { vBinArg1 = s v1
+                              , vBinOpr  = opr
+                              , vBinArg2 = s v2
+                              }
+  let text = T.intercalate " " [prefix, p v1, conj, p v2]
+  return $ WithText vbin text
 
-genInfixVerb :: BinaryOperator -> Gen T.Text
-genInfixVerb opr = case opr of
-  Add      -> Gen.element [ "plus"
-                          , "and"
-                          , "added to"
-                          ]
-  Subtract -> Gen.element [ "minus"
-                          , "without"
-                          ]
-  Multiply -> Gen.element [ "times"
-                          , "multiplied with"
-                          ]
-  Divide   -> pure "divided by"
+-- TODO there's gotta be a better way
+genInfixOpr :: Gen (BinaryOperator, Gen T.Text)
+genInfixOpr =
+  Gen.element [ (Add,  Gen.element [ "plus"
+                                   , "and"
+                                   , "added to"
+                                   ])
+              , (Subtract, Gen.element [ "minus"
+                                         , "without"
+                                         ])
+              , (Multiply, Gen.element [ "times"
+                                       , "multiplied with"
+                                       ])
+              , (Divide,     pure "divided by")
 
-genPrefixVerb :: BinaryOperator -> Gen T.Text
-genPrefixVerb opr = case opr of
-  Add      -> pure "add"
-  Subtract -> Gen.element [ "subtract"
-                          , "the difference between"
-                          ]
-  Multiply -> pure "multiply"
-  Divide   -> pure "divide"
+              , (EqualTo,              genComparator)
+              , (NotEqualTo,           T.append <$> genComparator <*> genNegation)
+              , (LessThan,             T.append <$> genComparator <*> pure " less than")
+              , (LessThanOrEqual,      do cmp    <- genComparator
+                                          negation <- genNegationWithNo
+                                          more   <- genMore
+                                          return $ T.concat [cmp, negation, more, "than"])
+              , (GreaterThan,          do cmp <- genComparator
+                                          more <- genMore
+                                          return $ T.concat [cmp, more, "than"])
+              , (GreaterThanOrEqual,   do cmp <- genComparator
+                                          negation <- genNegationWithNo
+                                          return $ T.concat [cmp, negation, "less than"])
+              ]
+  where
+    genNegation = Gen.element [" not", "n't"]
+    genNegationWithNo = genNegation <|> pure " no"
+    genMore = Gen.element [" more ", " greater "]
+    genComparator = Gen.element [ "is" , "was" , "has" , "had"]
 
-genPrefixConjuction :: BinaryOperator -> Gen T.Text
-genPrefixConjuction opr = case opr of
-  Add      -> pure "and"
-  Subtract -> Gen.element [ "and"
-                          , "from"
-                          ]
-  Multiply -> pure "and"
-  Divide   -> Gen.element [ "and"
-                          , "by"
-                          ]
 
-genBinaryOperator :: Gen BinaryOperator
-genBinaryOperator = Gen.element [ Add, Subtract, Multiply, Divide ]
+genPrefixVerbConj :: Gen (BinaryOperator, Gen T.Text, Gen T.Text)
+genPrefixVerbConj =
+  Gen.element [ ( Add
+                , pure "add"
+                , pure "and"
+                )
+              , ( Subtract
+                , Gen.element [ "subtract" , "the difference between"]
+                , Gen.element [ "and", "from" ]
+                )
+              , ( Multiply
+                , pure "multiply"
+                , pure "and"
+                )
+              , ( Divide
+                , pure "divide"
+                , Gen.element [ "and", "by" ]
+                )
+              ]
 
 --------------
 -- Literals --

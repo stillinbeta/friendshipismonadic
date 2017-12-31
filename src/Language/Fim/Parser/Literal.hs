@@ -33,7 +33,9 @@ charLiteral = do
 
 booleanLiteral :: Parser Types.Literal
 booleanLiteral = choice [ token_ Token.TrueLiteral  $> Types.BooleanLiteral True
-                        , token_ Token.FalseLiteral $> Types.BooleanLiteral False
+                        , choice [ token_ Token.FalseLiteral
+                                 , token_ Token.No
+                                 ] $> Types.BooleanLiteral False
                         ]
 
 nullLiteral :: Parser Types.Literal
