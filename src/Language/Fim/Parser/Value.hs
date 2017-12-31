@@ -86,7 +86,7 @@ prefixOperator =
          ]
 
 infixOperator :: Parser Types.BinaryOperator
-infixOperator = choice [ token_ Token.And           $> Types.Add
+infixOperator = choice [ token_ Token.And           $> Types.And
                        , token_ Token.AddInfix      $> Types.Add
                        , token_ Token.SubtractInfix $> Types.Subtract
                        , token_ Token.MultiplyInfix $> Types.Multiply

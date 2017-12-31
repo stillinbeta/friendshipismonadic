@@ -32,6 +32,7 @@ stack test
 * Assigning to/reading from variables
 * Arithmatic Operators
 * Comparison Operators
+* Boolean Operators
 
 ### What doesn't work
 

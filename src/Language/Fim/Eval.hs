@@ -95,9 +95,32 @@ evalValue v = case v of
                  v1' <- evalValue v1
                  v2' <- evalValue v2
                  evalBinOp v1' v2' opr
+               VUnaryOperation { vUnArg = v1
+                               , vUnOpr = opr
+                               } -> do
+                 v1' <- evalValue v1
+                 evalUnOp v1' opr
+
+
+evalUnOp :: (Evaluator m) => ValueBox -> UnaryOperator -> m ValueBox
+evalUnOp v op = case op of
+  Not -> do
+    b <- boolOrError v
+    return $ BooleanBox $ not b
 
 evalBinOp :: (Evaluator m) => ValueBox -> ValueBox -> BinaryOperator -> m ValueBox
 evalBinOp v1 v2 binOp
+  | binOp == And =
+      case (v1, v2) of
+        (BooleanBox b1, BooleanBox b2) -> return $ BooleanBox $ b1 && b2
+        (NumberBox n1, NumberBox n2)   -> return $ NumberBox $ n1 + n2
+        (_, _) -> throwError $
+          T.concat ["Expected operands to be booleans or numberboxes,"
+                   , " instead got "
+                   , boxTypeName v1
+                   , " and "
+                   , boxTypeName v2
+                   ]
   | binOp `elem` [Add, Multiply, Subtract, Divide] = do
       n1 <- numberOrError v1
       n2 <- numberOrError v2
@@ -114,15 +137,26 @@ evalBinOp v1 v2 binOp
        LT -> binOp `elem` [NotEqualTo, LessThanOrEqual, LessThan]
        GT -> binOp `elem` [NotEqualTo, GreaterThanOrEqual, GreaterThan]
        EQ -> binOp `elem` [EqualTo, LessThanOrEqual, GreaterThanOrEqual]
+  | binOp `elem` [Or, Xor] = do
+      b1 <- boolOrError v1
+      b2 <- boolOrError v2
+      return $ BooleanBox $ case binOp of
+        Or -> b1 || b2
+        Xor -> b1 /= b2 -- close enough
+        _ -> undefined
   | otherwise = undefined
   where isComparison = (`elem` [EqualTo, NotEqualTo
                                , GreaterThan, GreaterThanOrEqual
                                , LessThan, LessThanOrEqual])
-
 numberOrError :: (Evaluator m) => ValueBox -> m Double
 numberOrError (NumberBox n) = pure n
 numberOrError v = throwError $
-  T.intercalate " " ["expected" , T.pack . show $ v , "to be a number"]
+  T.intercalate " " ["expected" , boxTypeName v , "to be a number"]
+
+boolOrError :: (Evaluator m) => ValueBox -> m Bool
+boolOrError (BooleanBox b) = pure b
+boolOrError v = throwError $
+  T.intercalate " " ["expected" , boxTypeName v, "to be boolean"]
 
 compareBox :: (Evaluator m) => ValueBox -> ValueBox -> m Ordering
 compareBox v1 v2 =

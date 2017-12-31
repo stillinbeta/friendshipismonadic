@@ -52,7 +52,8 @@ data Value = VLiteral { vLiteral :: Literal}
                             }
            deriving (Eq, Show)
 
-data BinaryOperator = Add | Subtract | Multiply | Divide
+data BinaryOperator = And -- And can be "Add" or "&&"
+                    | Add | Subtract | Multiply | Divide
                     | EqualTo | NotEqualTo
                     | LessThan    | LessThanOrEqual
                     | GreaterThan | GreaterThanOrEqual
@@ -65,7 +66,6 @@ data UnaryOperator = Not
 
 newtype Variable = Variable { vName :: T.Text
                             } deriving (Eq, Show)
-
 
 data Literal = StringLiteral    { slValue :: T.Text }
              | NumberLiteral    { nlValue :: Double } -- TODO: Supposed to be Float64

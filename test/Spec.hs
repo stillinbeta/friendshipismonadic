@@ -148,6 +148,19 @@ main = hspec $ do
         Fim.run program `shouldOutput` "true\n"
         let program = wrapBoilerplate [text|I thought 19 isn't "a number"?|]
         Fim.run program `shouldOutput` "true\n"
+    describe "boolean conjuctions" $ do
+      it "should support and" $ do
+        let program = wrapBoilerplate [text|I thought true and false.|]
+        Fim.run program `shouldOutput` "false\n"
+      it "should support or" $ do
+        let program = wrapBoilerplate [text|I thought true or 16 is greater than 17.|]
+        Fim.run program `shouldOutput` "true\n"
+      it "should support xor" $ do
+        let program = wrapBoilerplate [text|I thought either true or true.|]
+        Fim.run program `shouldOutput` "false\n"
+      it "should support not" $ do
+        let program = wrapBoilerplate [text|I thought it's not the case that 19 is less than 18?|]
+        Fim.run program `shouldOutput` "true\n"
 
 shouldOutput :: IO (Maybe String) -> String -> Expectation
 shouldOutput io str =
