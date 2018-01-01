@@ -39,6 +39,10 @@ data Statement = Output { outputValue :: Value
                | Assignment { assignmentName :: Variable
                             , assignmentExpr :: Value
                             }
+               | IfThenElse { ifOnVal :: Value
+                            , ifThen :: [Statement]
+                            , ifElse :: [Statement]
+                            }
                deriving (Eq, Show)
 
 data Value = VLiteral { vLiteral :: Literal}

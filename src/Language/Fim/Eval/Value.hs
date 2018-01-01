@@ -52,8 +52,8 @@ evalBinOp v1 v2 binOp =
     Or -> doBool (||)
     Xor -> doBool (/=)
     And -> case (v1, v2) of
-             (BooleanBox b1, BooleanBox b2) -> return $ BooleanBox $ b1 && b2
-             (NumberBox n1, NumberBox n2)   -> return $ NumberBox $ n1 + n2
+             (BooleanBox b1, BooleanBox b2) -> return $ BooleanBox (b1 && b2)
+             (NumberBox n1, NumberBox n2)   -> return $ NumberBox  (n1  + n2)
              (_, _) -> throwError $ Errors.cantDeduceAnd v1 v2
   where
     doMath opr = NumberBox <$>

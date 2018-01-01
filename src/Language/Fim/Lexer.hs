@@ -49,7 +49,6 @@ lexToken' = choice
   , astring "Your faithful student," $> Token.ClassEnd
 
   , rstring R_Today $> Token.MainMethod -- prefix of That's all about
-  , rstring R_I $> Token.I
   , rstring R_learned $> Token.MethodDec -- prefix of letter
   , astring "That's all about" $> Token.MethodDecEnd
 
@@ -58,6 +57,16 @@ lexToken' = choice
             , R_sang
             , R_thought
             ] $> Token.OutputVerb
+
+  -- If then else
+  , rchoice [ R_If
+            , R_When
+            ] $> Token.If
+  , astring "then" $> Token.Then
+  , rchoice [ R_Otherwise
+            , R_Or_else
+            ] $> Token.Else
+  , rstring R_Thats_what_I_would_do $> Token.Fi
 
   , Token.NumberLiteral <$> numberLiteral
   , Token.CharLiteral   <$> charLiteral
@@ -142,6 +151,7 @@ lexToken' = choice
   , rstring R_and $> Token.And
   , rstring R_from $> Token.From
   , rstring R_by $> Token.By
+  , rstring R_I $> Token.I
 
   , rchoice [ R_the
             , R_an

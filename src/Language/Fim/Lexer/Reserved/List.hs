@@ -81,4 +81,10 @@ reservedWordList = [ "Dear"
                    , "either"
                    , "not"
                    , "it's not the case that"
+                   -- If then else
+                   , "If"
+                   , "When"
+                   , "That's what I would do"
+                   , "Otherwise"
+                   , "Or else"
                    ]

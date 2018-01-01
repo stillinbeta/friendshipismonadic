@@ -75,6 +75,12 @@ data Token = ClassStart
            | Either
            | Or
            | NotTheCase
+           -- Conditionals
+           | If
+           | Then
+           | Else
+           | Fi
+
            deriving (Show, Eq)
 
 -- Only match on types, not wrapped value

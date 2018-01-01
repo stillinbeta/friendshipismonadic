@@ -11,7 +11,7 @@ import Language.Fim.Parser.Literal (literal)
 import qualified Language.Fim.Lexer.Token as Token
 
 import Data.Functor (($>))
-import Data.Maybe (isJust)
+import Data.Maybe (isJust, fromMaybe)
 import Text.Parsec ((<?>), (<|>))
 import Text.Parsec.Combinator (choice, optionMaybe, optional)
 
@@ -23,6 +23,7 @@ statement :: Parser Types.Statement
 statement = choice [ output
                    , declaration
                    , assignment
+                   , ifThenElse
                    ] <?> "statement"
 
 -- output --
@@ -98,3 +99,23 @@ assignmentVerb = choice [ (token_ Token.Is <|> token_ Token.Are) >> token_ Token
                         , token_ Token.Now >> token_ Token.Like
                         , token_ Token.Become
                         ]
+
+-- If then else
+ifThenElse :: Parser Types.Statement
+ifThenElse = do
+  token_ Token.If
+  val <- value
+  optional $ token_ Token.Then
+  terminator
+  token_ Token.Newline
+  then_ <- statements
+  else_ <- fromMaybe [] <$> optionMaybe (do
+    token_ Token.Else
+    terminator
+    statements)
+  token_ Token.Fi
+  terminator
+  return Types.IfThenElse { Types.ifOnVal = val
+                          , Types.ifThen = then_
+                          , Types.ifElse = else_
+                          }

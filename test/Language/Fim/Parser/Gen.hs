@@ -31,7 +31,7 @@ genClass = do
   p1 <- genPunctuation
   studentName <- genName
   p2 <- genPunctuation
-  body <- Gen.list (Range.linear 1 100) genFunction
+  body <- Gen.list (Range.linear 1 10) genFunction
   return $ WithText
     Class { className    = sName
           , classSuper   = sSuper
@@ -80,7 +80,7 @@ genFunction = do
   today <- Gen.bool_
   p0 <- genPunctuation
   p1 <- genPunctuation
-  body <- Gen.list (Range.linear 0 100) genStatement
+  body <- genStatements
   return $ WithText
     Function { functionName = s name
              , isMain = today
@@ -91,11 +91,20 @@ genFunction = do
              ++ ["That's all about ", p name, p1, "\n"]
     )
 
+genStatements :: Gen [WithText Statement]
+genStatements = Gen.list (Range.linear 0 20) genStatement
+
+genStatements1 :: Gen [WithText Statement]
+genStatements1 = Gen.list (Range.linear 1 20) genStatement
+
 genStatement :: Gen (WithText Statement)
-genStatement = Gen.choice [ genOutput
-                          , genDeclaration
-                          , genAssignment
-                          ]
+genStatement = Gen.recursive
+  Gen.choice
+  [ genOutput
+  , genDeclaration
+  , genAssignment
+  ]
+  [genIfThenElse]
 
 genOutput :: Gen (WithText Statement)
 genOutput = do
@@ -187,6 +196,30 @@ genCharNoun = Gen.element ["letter", "character"]
 genBooleanNoun :: Gen T.Text
 genBooleanNoun = Gen.element ["argument", "logic"]
 
+genIfThenElse :: Gen (WithText Statement)
+genIfThenElse = do
+  then_ <- genStatements1
+  else_ <- genStatements
+  val <- genValue
+  prefix <- Gen.element ["If", "When"]
+  suffix <- Gen.element ["", " then"]
+  p1 <- genPunctuation
+  p2 <- genPunctuation
+  p3 <- genPunctuation
+  otherwise_ <- Gen.element ["Otherwise", "Or else"]
+  let text = T.concat [ prefix, " ", p val, suffix, p1, "\n", sConcat then_
+                      , if null else_
+                        then ""
+                        else T.concat [otherwise_, p2, sConcat else_, "\n"]
+                      , "That's what I would do", p3, "\n"
+                      ]
+  let ife = IfThenElse { ifOnVal = s val
+                       , ifThen = map s then_
+                       , ifElse = map s else_
+                       }
+  return $ WithText ife text
+  where
+    sConcat = T.concat . map p
 
 -----------
 -- Value --
