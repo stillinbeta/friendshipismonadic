@@ -41,9 +41,9 @@ cantDeduceAnd v1 v2 =
 
 unexpectedType :: ETypes.ValueBox -> Types.Type -> T.Text
 unexpectedType vbox typ =
-  T.intercalate " " [ "expected"
+  T.intercalate " " [ "Expected"
                     , boxTypeName vbox
-                    , "to be a"
+                    , "to be of type"
                     , typeName typ
                     ]
 

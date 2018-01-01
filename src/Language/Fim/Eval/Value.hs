@@ -1,6 +1,8 @@
 {-# LANGUAGE FlexibleContexts #-}
 
-module Language.Fim.Eval.Value (evalValue) where
+module Language.Fim.Eval.Value ( evalValue
+                               , boolOrError
+                               ) where
 
 import Language.Fim.Eval.Types (Evaluator, ValueBox(..), vboxValue, boxLiteral, variables)
 import qualified Language.Fim.Eval.Errors as Errors

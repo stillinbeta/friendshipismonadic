@@ -6,7 +6,7 @@ import Language.Fim.Eval.Types ( VariableBox(..) , ValueBox(..)
                                , Evaluator , variables , typeForBox)
 import Language.Fim.Types
 import qualified Language.Fim.Eval.Errors as Errors
-import Language.Fim.Eval.Value (evalValue)
+import Language.Fim.Eval.Value (evalValue, boolOrError)
 import Language.Fim.Eval.Util (printableLiteral, checkType)
 
 import Prelude hiding (putStrLn)
@@ -52,3 +52,11 @@ evalStatement a@Assignment{} = do
       checkType box (vboxType var) aVar
       let m' = Map.insert aVarName (var { vboxValue = box }) m
       modify $ \s -> s { variables = m' }
+evalStatement i@IfThenElse{} = do
+  box <- evalValue $ ifOnVal i
+  branch <- boolOrError box
+  let stmts = if branch
+              then ifThen i
+              else ifElse i
+  -- TODO should if/then/else be scoped?
+  mapM_ evalStatement stmts

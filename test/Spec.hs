@@ -161,6 +161,27 @@ main = hspec $ do
       it "should support not" $ do
         let program = wrapBoilerplate [text|I thought it's not the case that 19 is less than 18?|]
         Fim.run program `shouldOutput` "true\n"
+    describe "conditional logic" $ do
+      it "should error on non-booleans" $ do
+        let program = wrapBoilerplate [text|When "Chimicherrychanga":
+                                            I sang "Pinkie Pie!"!
+                                            That's what I would do.
+                                           |]
+        Fim.run program `shouldOutputToStderr` "Expected string to be of type argument\n"
+      it "should branch" $ do
+        let program = wrapBoilerplate [text|When 18 isn't less than 10:
+                                            I said "I'm pancake"!
+                                            That's what I would do.
+                                           |]
+        Fim.run program `shouldOutput` "I'm pancake\n"
+      it "should support else" $ do
+        let program = wrapBoilerplate [text|When not true:
+                                            I said "I'm pancake"!
+                                            Otherwise:
+                                            I said "I mean... Awake".
+                                            That's what I would do.
+                                           |]
+        Fim.run program `shouldOutput` "I mean... Awake\n"
 
 shouldOutput :: IO (Maybe String) -> String -> Expectation
 shouldOutput io str =

@@ -33,10 +33,10 @@ stack test
 * Arithmatic Operators
 * Comparison Operators
 * Boolean Operators
+* Branching Statements
 
 ### What doesn't work
 
-* Branching Statements
 * Loops
 * Calling Methods/Classes
 * Inheritence
