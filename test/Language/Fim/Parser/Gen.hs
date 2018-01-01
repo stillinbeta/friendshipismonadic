@@ -97,6 +97,8 @@ genStatement :: Gen (WithText Statement)
 genStatement = Gen.recursive
   Gen.choice
   [ genOutput
+  , genInput
+  , genPrompt
   , genDeclaration
   , genAssignment
   ]
@@ -114,6 +116,27 @@ genOutput = do
   return $ WithText
     Output { outputValue = s val }
     (T.concat ["I ", verb, " ", p val, p0, "\n"])
+
+genInput :: Gen (WithText Statement)
+genInput = do
+  verb <- Gen.element ["heard", "read", "asked"]
+  typ <- Gen.choice [ pure $ WithText Nothing ""
+                     , do
+                         typ <- genType
+                         return $ WithText (Just $ s typ) (" the next " `T.append` p typ)
+                     ]
+  p0 <- genPunctuation
+  var <- genVariable
+  let text = T.concat ["I ", verb,  " ", p var, p typ, p0, "\n"]
+  return $ WithText Input { inputName = s var, inputType = s typ } text
+
+genPrompt :: Gen (WithText Statement)
+genPrompt = do
+  var <- genVariable
+  val <- genValue
+  p0 <- genPunctuation
+  let text = T.concat ["I asked ", p var, ": ", p val, p0, "\n"]
+  return $ WithText Prompt { promptName = s var, promptVal = s val} text
 
 genDeclaration :: Gen (WithText Statement)
 genDeclaration = do
@@ -154,15 +177,22 @@ genAssignment = do
                }
     (T.concat [ p var, " ", statement, " ", p val, p0, "\n"])
 
-genDeclarationNothingTyped :: Gen (WithText (Maybe Value), Maybe Type)
-genDeclarationNothingTyped = do
+genType :: Gen (WithText Type)
+genType = do
   article <- Gen.element ["", "the ", "a "]
   (gen, typ) <- Gen.choice [ pure (genNumberNoun, TNumber)
                            , pure (genStringNoun, TString)
                            , pure (genCharNoun, TCharacter)
+                           , pure (genBooleanNoun, TBoolean)
                            ]
   noun <- gen
-  return (WithText Nothing $ T.concat [article, noun], Just typ)
+  return $ WithText typ (T.concat [article, noun])
+
+
+genDeclarationNothingTyped :: Gen (WithText (Maybe Value), Maybe Type)
+genDeclarationNothingTyped = do
+  typ <- genType
+  return (WithText Nothing (p typ), Just $ s typ)
 
 genDeclarationLiteralTyped :: Gen (WithText (Maybe Value), Maybe Type)
 genDeclarationLiteralTyped = do

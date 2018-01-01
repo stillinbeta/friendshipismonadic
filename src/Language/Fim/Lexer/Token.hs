@@ -11,7 +11,6 @@ import qualified Data.Text as T
 data Token = ClassStart
            | ClassEnd
            -- Methods
-           | I
            | MainMethod
            | MethodDec
            | MethodDecEnd
@@ -52,6 +51,9 @@ data Token = ClassStart
            | Become
            -- Interaction
            | OutputVerb
+           | PromptVerb
+           | InputVerb
+           | InputType
            -- Arithmetic
            | And
            | From

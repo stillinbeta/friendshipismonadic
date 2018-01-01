@@ -4,25 +4,25 @@ reservedWordList :: [String]
 reservedWordList = [ "Dear"
                    -- Method
                    , "Today"
-                   , "I"
-                   , "learned"
+                   , "I learned"
+                   , "That's all about"
                    -- literals
+                   -- null
                    , "nothing"
 
+                   -- true
                    , "yes"
                    , "true"
                    , "right"
                    , "correct"
 
+                   -- false
                    , "no"
                    , "false"
                    , "wrong"
                    , "incorrect"
                    -- declare
-                   , "Did"
-                   , "you"
-                   , "know"
-                   , "that"
+                   , "Did you know that"
                    , "always"
                    -- declare verbs
                    , "is"
@@ -35,10 +35,15 @@ reservedWordList = [ "Dear"
                    , "liked"
                    , "the"
                    -- Output verbs
-                   , "sang"
-                   , "wrote"
-                   , "said"
-                   , "thought"
+                   , "I sang"
+                   , "I wrote"
+                   , "I said"
+                   , "I thought"
+                   -- Input verbs
+                   , "I heard"
+                   , "I asked"
+                   , "I read"
+                   , "the next"
                    -- types
                    , "number"
                    , "letter"

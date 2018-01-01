@@ -12,7 +12,7 @@ import qualified Language.Fim.Lexer.Token as Token
 
 import Data.Functor (($>))
 import Data.Maybe (isJust, fromMaybe)
-import Text.Parsec ((<?>), (<|>))
+import Text.Parsec ((<?>), (<|>), try)
 import Text.Parsec.Combinator (choice, optionMaybe, optional)
 
 
@@ -20,7 +20,7 @@ statements :: Parser [Types.Statement]
 statements = manyWithNewlines statement
 
 statement :: Parser Types.Statement
-statement = choice [ output
+statement = choice [ io
                    , declaration
                    , assignment
                    , ifThenElse
@@ -30,14 +30,46 @@ statement = choice [ output
                    ] <?> "statement"
 
 -- output --
+
+io :: Parser Types.Statement
+io = choice [ output
+            , try prompt -- might consume PromptVerb before failing
+            , input
+            ]
+
 output :: Parser Types.Statement
 output = do
-  token_ Token.I
   token_ Token.OutputVerb
   val <- value
   terminator
   token_ Token.Newline
   return $ Types.Output val
+
+input :: Parser Types.Statement
+input = do
+  token_ Token.InputVerb <|> token_ Token.PromptVerb
+  var <- variable
+  typ <- optionMaybe $ do
+    token_ Token.InputType
+    declarationType
+  terminator
+  token_ Token.Newline
+  return Types.Input { Types.inputName = var
+                     , Types.inputType = typ
+                     }
+
+prompt :: Parser Types.Statement
+prompt = do
+  token_ Token.PromptVerb
+  var <- variable
+  -- ADJUSTMENT: spec as written was ambiguous here.
+  token_ Token.Colon
+  val <- value
+  terminator
+  token_ Token.Newline
+  return Types.Prompt { Types.promptVal = val
+                      , Types.promptName = var
+                      }
 
 -- Declaration --
 
@@ -67,7 +99,6 @@ declaration = do
 
 declarationTyped :: Parser (Maybe Types.Type, Maybe Types.Value)
 declarationTyped = do
-  optional $ token_ Token.Article
   typ <- declarationType
   val <- optionMaybe literal
   return (Just typ, Types.VLiteral <$> val)
@@ -78,7 +109,9 @@ declarationVariable = do
   return (Nothing, Just $ Types.VVariable var)
 
 declarationType :: Parser Types.Type
-declarationType = choice [ token_ Token.NumberType    $> Types.TNumber
+declarationType = do
+  optional $ token_ Token.Article
+  choice [ token_ Token.NumberType    $> Types.TNumber
                          , token_ Token.CharacterType $> Types.TCharacter
                          , token_ Token.StringType    $> Types.TString
                          , token_ Token.BooleanType   $> Types.TBoolean

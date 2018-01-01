@@ -31,6 +31,12 @@ data Type = TNumber | TString | TCharacter | TBoolean deriving (Eq, Show)
 
 data Statement = Output { outputValue :: Value
                         }
+               | Input { inputName :: Variable
+                       , inputType :: Maybe Type
+                       }
+               | Prompt { promptName :: Variable
+                        , promptVal  :: Value
+                        }
                | Declaration { declareName :: Variable
                              , declareVal :: Maybe Value
                              , declareIsConstant :: Bool

@@ -19,7 +19,7 @@ methods = manyWithNewlines method
 method :: Parser Types.Function
 method = do
   isMain <- isJust <$> optionMaybe (token Token.MainMethod)
-  methodDec
+  token_ Token.MethodDec
   name <- identifier
   terminator
   token_ Token.Newline
@@ -34,6 +34,3 @@ methodEnd idt = do
   end <- identifier
   unless (idt == end) $ fail "expected method end"
   terminator
-
-methodDec :: Parser ()
-methodDec = token_ Token.I >> token_ Token.MethodDec

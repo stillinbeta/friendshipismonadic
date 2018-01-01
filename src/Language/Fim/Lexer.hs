@@ -45,18 +45,24 @@ rchoice = choice . map rstring
 
 lexToken' :: Parser Token.Token
 lexToken' = choice
-  [ rstring R_Dear $> Token.ClassStart -- prefix of Did you Know
+  [ rstring R_Dear $> Token.ClassStart
   , astring "Your faithful student," $> Token.ClassEnd
 
-  , rstring R_Today $> Token.MainMethod -- prefix of That's all about
-  , rstring R_learned $> Token.MethodDec -- prefix of letter
-  , astring "That's all about" $> Token.MethodDecEnd
+  , rstring R_Today $> Token.MainMethod
+  , rstring R_I_learned $> Token.MethodDec
+  , rstring R_Thats_all_about $> Token.MethodDecEnd
 
-  , rchoice [ R_said
-            , R_wrote
-            , R_sang
-            , R_thought
+  -- Input/output
+  , rchoice [ R_I_said
+            , R_I_wrote
+            , R_I_sang
+            , R_I_thought
             ] $> Token.OutputVerb
+  , rstring R_I_asked $> Token.PromptVerb
+  , rchoice [ R_I_heard
+            , R_I_read
+            ] $> Token.InputVerb
+  , rstring R_the_next $> Token.InputType
 
   -- If then else
   , rchoice [ R_If
@@ -164,7 +170,6 @@ lexToken' = choice
   , rstring R_and $> Token.And
   , rstring R_from $> Token.From
   , rstring R_by $> Token.By
-  , rstring R_I $> Token.I
 
   -- Never used at the start of a phrase
   , choice [ astring "the"
@@ -233,16 +238,13 @@ identifier = T.pack <$> manyTill anyChar endOfVariable
 
 -- Voids needed inline to bring types into alignment
 endOfVariable :: Parser ()
-endOfVariable = lookAhead $ void punctuation <|> void reservedWords
-
-punctuation :: Parser Char
-punctuation = oneOf ".!?‽…:"
-
-reservedWords :: Parser ()
--- try (space >> string Dear)
-reservedWords = void $ choice $ map (try . (space>>) . string) reservedWordList
-
--- Utility
+endOfVariable = lookAhead $ punctuation <|> reservedWord
+  where
+    -- terminals do not start with spaces
+    punctuation = void $ oneOf ".!?‽…:"
+    reservedWord = void . choice . map matchWord $ reservedWordList
+    -- reserved words are preceded with a space
+    matchWord = try . (space >>) . string
 
 pprint :: LexStream -> String
 pprint = unwords . map (show' . snd)
