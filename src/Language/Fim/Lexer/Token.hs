@@ -86,6 +86,8 @@ data Token = ClassStart
            | WhileEnd
            | DoWhileEnd
            | DoWhileEnd2
+           | ForStart
+           | To
            deriving (Show, Eq)
 
 -- Only match on types, not wrapped value

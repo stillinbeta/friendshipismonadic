@@ -49,6 +49,12 @@ data Statement = Output { outputValue :: Value
                | DoWhile { doWhileBody :: [Statement]
                          , doWhileVal :: Value
                          }
+               | For { forVar  :: Variable
+                     , forType :: Type
+                     , forFrom :: Value
+                     , forTo   :: Value
+                     , forBody :: [Statement]
+                     }
                deriving (Eq, Show)
 
 data Value = VLiteral { vLiteral :: Literal}

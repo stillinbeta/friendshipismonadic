@@ -34,11 +34,10 @@ stack test
 * Comparison Operators
 * Boolean Operators
 * Branching Statements
-* While and Do While loops
+* While and Do While, and For loops
 
 ### What doesn't work
 
-* For Loops
 * Arrays
 * Switches
 * Calling Methods/Classes

@@ -93,9 +93,6 @@ genFunction = do
 genStatements :: Gen [WithText Statement]
 genStatements = Gen.list (Range.linear 0 20) genStatement
 
-genStatements1 :: Gen [WithText Statement]
-genStatements1 = Gen.list (Range.linear 1 20) genStatement
-
 genStatement :: Gen (WithText Statement)
 genStatement = Gen.recursive
   Gen.choice
@@ -106,6 +103,7 @@ genStatement = Gen.recursive
   [ genIfThenElse
   , genWhile
   , genDoWhile
+  , genFor
   ]
 
 genOutput :: Gen (WithText Statement)
@@ -200,7 +198,7 @@ genBooleanNoun = Gen.element ["argument", "logic"]
 
 genIfThenElse :: Gen (WithText Statement)
 genIfThenElse = do
-  then_ <- genStatements1
+  then_ <- genStatements
   else_ <- genStatements
   val <- genValue
   prefix <- Gen.element ["If", "When"]
@@ -212,7 +210,7 @@ genIfThenElse = do
   let text = T.concat [ prefix, " ", p val, suffix, p1, "\n", sConcat then_
                       , if null else_
                         then ""
-                        else T.concat [otherwise_, p2, sConcat else_, "\n"]
+                        else T.concat [otherwise_, p2, " ", sConcat else_, "\n"]
                       , "That's what I would do", p3, "\n"
                       ]
   let ife = IfThenElse { ifOnVal = s val
@@ -225,7 +223,7 @@ genIfThenElse = do
 
 genWhile :: Gen (WithText Statement)
 genWhile = do
-  stmts <- genStatements1
+  stmts <- genStatements
   p1 <- genPunctuation
   p2 <- genPunctuation
   val <- genValue
@@ -243,7 +241,7 @@ genWhile = do
 
 genDoWhile :: Gen (WithText Statement)
 genDoWhile = do
-  stmts <- genStatements1
+  stmts <- genStatements
   p1 <- genPunctuation
   p2 <- genPunctuation
   val <- genValue
@@ -259,6 +257,30 @@ genDoWhile = do
                     }
   return $ WithText typ text
 
+genFor :: Gen (WithText Statement)
+genFor = do
+  typ <- Gen.element [ WithText TNumber "number"
+                     , WithText TCharacter "letter"
+                     , WithText TCharacter "character"
+                     ]
+  var <- genVariable
+  val1 <- genValue
+  val2 <- genValue
+  p1 <- genPunctuation
+  p2 <- genPunctuation
+  stmts <- genStatements
+  let text = T.concat [ "For every ", p typ, " ", p var
+                      , " from ", p val1, " to ", p val2, p1, "\n"
+                      , T.concat $ map p stmts
+                      , "That's what I did", p2, "\n"
+                      ]
+  let for = For { forVar  = s var
+                , forType = s typ
+                , forFrom = s val1
+                , forTo   = s val2
+                , forBody = map s stmts
+                }
+  return $ WithText for text
 
 
 -----------

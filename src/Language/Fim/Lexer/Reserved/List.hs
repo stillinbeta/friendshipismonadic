@@ -91,4 +91,6 @@ reservedWordList = [ "Dear"
                    , "As long as"
                    , "That's what I did"
                    , "I did this"
+                   , "For every"
+                   , "to"
                    ]

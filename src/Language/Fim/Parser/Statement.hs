@@ -26,6 +26,7 @@ statement = choice [ output
                    , ifThenElse
                    , while
                    , doWhile
+                   , for
                    ] <?> "statement"
 
 -- output --
@@ -150,3 +151,24 @@ doWhile = do
   return Types.DoWhile { Types.doWhileBody = body
                        , Types.doWhileVal  = val
                        }
+
+for :: Parser Types.Statement
+for = do
+  token_ Token.ForStart
+  typ <- declarationType
+  var <- variable
+  token_ Token.From
+  val1 <- value
+  token_ Token.To
+  val2 <- value
+  terminator
+  stmts <- statements
+  token_ Token.WhileEnd
+  terminator
+  token_ Token.Newline
+  return Types.For { Types.forVar  = var
+                   , Types.forType = typ
+                   , Types.forFrom = val1
+                   , Types.forTo   = val2
+                   , Types.forBody = stmts
+                   }

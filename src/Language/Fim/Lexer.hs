@@ -78,6 +78,9 @@ lexToken' = choice
   , choice [ astring "while"
            , astring "as long as"
            ] $> Token.DoWhileEnd2
+  , rstring R_For_every $> Token.ForStart
+  , rstring R_to $> Token.To
+
   , Token.NumberLiteral <$> numberLiteral
   , Token.CharLiteral   <$> charLiteral
   , Token.StringLiteral <$> stringLiteral

@@ -8,6 +8,7 @@ module Language.Fim.Eval.Errors ( noMainMethod
                                 , cantDeduceAnd
                                 , unexpectedType
                                 , variableTypeMismatch
+                                , iterateWrongType
                                 ) where
 
 import qualified Language.Fim.Types as Types
@@ -32,7 +33,7 @@ assignToConstant = T.append "Can't assign to constant " . showVariable
 
 cantDeduceAnd :: ETypes.ValueBox -> ETypes.ValueBox -> T.Text
 cantDeduceAnd v1 v2 =
-  T.concat ["Expected operands to be booleans or numberboxes,"
+  T.concat ["Can only iterate over numbers and characters,"
            , " instead got "
            , boxTypeName v1
            , " and "
@@ -56,6 +57,15 @@ variableTypeMismatch box var typ =
                     , "of type"
                     , typeName typ
                     ]
+
+iterateWrongType :: ETypes.ValueBox -> ETypes.ValueBox -> T.Text
+iterateWrongType box1 box2 =
+  T.intercalate " " [ "Can only iterate over numbers and letters, but got"
+                    , boxTypeName box1
+                    , "and"
+                    , boxTypeName box2
+                    ]
+
 -- utilities
 
 showVariable :: Types.Variable -> T.Text

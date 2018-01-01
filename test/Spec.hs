@@ -200,6 +200,32 @@ main = hspec $ do
                                     I did this as long as Applejack's apple harvest is less than 3.
                                    |]
         Fim.run program `shouldOutput` "1\n2\n3\n"
+      it "should support for loops" $ do
+        let program =
+              wrapBoilerplate [text|For every letter Letter from 'a' to 'z':
+                                    I said Letter!
+                                    That's what I did.
+                                   |]
+        Fim.run program `shouldOutput` concatMap (:"\n") ['a'..'z']
+      it "should no allow loops over strings or booleans" $ do
+        let program =
+                wrapBoilerplate [text|For every argument Argument from yes to no:
+                                      I said Argument.
+                                      That's what I did.
+                                    |]
+        Fim.run program `shouldOutputToStderr`
+          "Can only iterate over numbers and characters, instead got argument and argument\n"
+        let program2 =
+                wrapBoilerplate [text|For every string Name from "Applejack" to "Twilight":
+                                      I said Name.
+                                      That's what I did.
+                                    |]
+        Fim.run program `shouldOutputToStderr`
+          "Can only iterate over numbers and characters, instead got argument and argument\n"
+
+
+
+
 
 shouldOutput :: IO (Maybe String) -> String -> Expectation
 shouldOutput io str =

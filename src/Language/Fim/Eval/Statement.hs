@@ -16,6 +16,7 @@ import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Error.Class (throwError)
 import Control.Monad.State.Class (gets, modify)
 import qualified Data.Map as Map
+import Data.Ix (range)
 import Data.Text.IO (putStrLn)
 
 
@@ -50,8 +51,7 @@ evalStatement a@Assignment{} = do
       m <- gets variables
       box <- evalValue $ assignmentExpr a
       checkType box (vboxType var) aVar
-      let m' = Map.insert aVarName (var { vboxValue = box }) m
-      modify $ \s -> s { variables = m' }
+      setVariable aVar box
 evalStatement i@IfThenElse{} = do
   box <- evalValue $ ifOnVal i
   branch <- boolOrError box
@@ -73,3 +73,37 @@ evalStatement w@DoWhile{} = do
   box <- evalValue $ doWhileVal w
   branch <- boolOrError box
   when branch $ evalStatement w
+
+evalStatement f@For{} = do
+  from <- evalValue $ forFrom f
+  to <- evalValue $ forTo f
+  let var = forVar f
+  let typ = forType f
+  vals <- boxRange from to
+  evalStatement Declaration { declareName = var
+                            , declareVal = Nothing
+                            , declareIsConstant = False
+                            , declareType = Just typ
+                            }
+  let doIter val = do
+        setVariable var val
+        mapM_ evalStatement $ forBody f
+  mapM_ doIter vals
+  where
+    boxRange from to = case (from, to) of
+      (NumberBox n1, NumberBox n2) ->
+        let n1' = round n1 :: Int
+            n2' = round n2 :: Int in
+          pure $ map (NumberBox . fromIntegral) (range (n1', n2'))
+      (CharacterBox c1, CharacterBox c2) -> pure $ map CharacterBox (range (c1, c2))
+      (_, _) -> throwError $ Errors.cantDeduceAnd from to
+
+
+-- Does not perform any checking!
+-- will not set new
+setVariable :: (Evaluator m) => Variable -> ValueBox -> m ()
+setVariable var box = do
+  let vname = vName var
+  m <- gets variables
+  let m' = Map.adjust (\v -> v { vboxValue = box}) vname m
+  modify $ \s -> s {variables = m' }
