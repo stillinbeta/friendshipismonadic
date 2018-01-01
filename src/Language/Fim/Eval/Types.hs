@@ -1,4 +1,4 @@
-{-# LANGUAGE ConstraintKinds, FlexibleContexts #-}
+{-# LANGUAGE ConstraintKinds, FlexibleContexts, FlexibleInstances, UndecidableInstances #-}
 
 module Language.Fim.Eval.Types ( ValueBox(..)
                                , VariableBox(..)
@@ -7,17 +7,21 @@ module Language.Fim.Eval.Types ( ValueBox(..)
                                , EvalState(..)
                                , newEvalState
                                , typeForBox
+                               , InputOutput(..)
                                ) where
 
 import Language.Fim.Types (Literal(..), Type(..))
 
 import Control.Monad.State.Class (MonadState)
 import Control.Monad.Error.Class (MonadError)
-import Control.Monad.IO.Class (MonadIO)
 import qualified Data.Map as Map
 import qualified Data.Text as T
 
-type Evaluator m = (MonadState EvalState m, MonadError T.Text m, MonadIO m)
+class Monad m => InputOutput m where
+  getText :: m T.Text
+  putText :: T.Text -> m ()
+
+type Evaluator m = (MonadState EvalState m, MonadError T.Text m, InputOutput m)
 
 data EvalState = EvalState { variables :: Map.Map T.Text VariableBox
                            }

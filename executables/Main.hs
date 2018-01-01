@@ -1,7 +1,7 @@
 module Main where
 
 import qualified Language.Fim.Eval as Eval
-import Language.Fim (run)
+import Language.Fim (runIO)
 
 import Prelude hiding (readFile)
 import Data.Text.IO (readFile)
@@ -24,7 +24,7 @@ main = do
       errorMsg $ "usage: " ++ progName ++ " <input file>"
     (sourceFile:_) -> do
       file <- readFile sourceFile
-      res <- run file
-      case res of
-        Just err -> errorMsg err
-        _ -> return ()
+      err <- runIO file
+      case err of
+        Just errMsg -> errorMsg errMsg
+        Nothing -> return ()

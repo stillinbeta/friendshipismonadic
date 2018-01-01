@@ -3,7 +3,9 @@
 module Language.Fim.Eval.Statement (evalStatement) where
 
 import Language.Fim.Eval.Types ( VariableBox(..) , ValueBox(..)
-                               , Evaluator , variables , typeForBox)
+                               , Evaluator , variables , typeForBox
+                               , putText --, getText
+                               )
 import Language.Fim.Types
 import qualified Language.Fim.Eval.Errors as Errors
 import Language.Fim.Eval.Value (evalValue, boolOrError)
@@ -12,18 +14,16 @@ import Language.Fim.Eval.Util (printableLiteral, checkType)
 import Prelude hiding (putStrLn)
 import Control.Applicative ((<|>))
 import Control.Monad (when)
-import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Error.Class (throwError)
 import Control.Monad.State.Class (gets, modify)
 import qualified Data.Map as Map
 import Data.Ix (range)
-import Data.Text.IO (putStrLn)
 
 
 evalStatement :: (Evaluator m) => Statement -> m ()
 evalStatement o@Output{} = do
   box <- evalValue $ outputValue o
-  liftIO . putStrLn . printableLiteral $ box
+  putText $ printableLiteral box
 evalStatement d@Declaration{} = do
   box <- maybe (pure NullBox) evalValue (declareVal d)
   let var = declareName d
@@ -48,7 +48,6 @@ evalStatement a@Assignment{} = do
     Nothing -> throwError $ Errors.undefinedVariable aVar
     Just var -> do
       when (vboxIsConstant var) $ throwError (Errors.assignToConstant aVar)
-      m <- gets variables
       box <- evalValue $ assignmentExpr a
       checkType box (vboxType var) aVar
       setVariable aVar box
