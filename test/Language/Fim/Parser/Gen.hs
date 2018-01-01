@@ -7,8 +7,7 @@ module Language.Fim.Parser.Gen ( genClass
 import Language.Fim.Types
 import Language.Fim.Internal (reservedWordList)
 
-import Control.Applicative ((<|>), unwrapArrow)
-import Control.Monad (join)
+import Control.Applicative ((<|>))
 import qualified Data.Text as T
 import Data.Char (isDigit)
 import Text.Printf (printf)
@@ -104,7 +103,10 @@ genStatement = Gen.recursive
   , genDeclaration
   , genAssignment
   ]
-  [genIfThenElse]
+  [ genIfThenElse
+  , genWhile
+  , genDoWhile
+  ]
 
 genOutput :: Gen (WithText Statement)
 genOutput = do
@@ -220,6 +222,44 @@ genIfThenElse = do
   return $ WithText ife text
   where
     sConcat = T.concat . map p
+
+genWhile :: Gen (WithText Statement)
+genWhile = do
+  stmts <- genStatements1
+  p1 <- genPunctuation
+  p2 <- genPunctuation
+  val <- genValue
+  dec <- Gen.element [ "Here's what I did while"
+                     , "As long as"
+                     ]
+  let text = T.concat [ dec, " ", p val, p1, "\n"
+                      , T.concat $ map p stmts
+                      , "That's what I did", p2, "\n"
+                      ]
+  let typ = While { whileVal = s val
+                  , whileBody = map s stmts
+                  }
+  return $ WithText typ text
+
+genDoWhile :: Gen (WithText Statement)
+genDoWhile = do
+  stmts <- genStatements1
+  p1 <- genPunctuation
+  p2 <- genPunctuation
+  val <- genValue
+  while <- Gen.element [ "while"
+                       , "as long as"
+                       ]
+  let text = T.concat [ "Here's what I did ", p1, "\n"
+                      , T.concat $ map p stmts
+                      , "I did this ", while, " ", p val, p2, "\n"
+                      ]
+  let typ = DoWhile { doWhileBody = map s stmts
+                    , doWhileVal  = s val
+                    }
+  return $ WithText typ text
+
+
 
 -----------
 -- Value --

@@ -43,6 +43,12 @@ data Statement = Output { outputValue :: Value
                             , ifThen :: [Statement]
                             , ifElse :: [Statement]
                             }
+               | While { whileVal :: Value
+                       , whileBody :: [Statement]
+                       }
+               | DoWhile { doWhileBody :: [Statement]
+                         , doWhileVal :: Value
+                         }
                deriving (Eq, Show)
 
 data Value = VLiteral { vLiteral :: Literal}

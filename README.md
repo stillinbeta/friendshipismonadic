@@ -34,13 +34,18 @@ stack test
 * Comparison Operators
 * Boolean Operators
 * Branching Statements
+* While and Do While loops
 
 ### What doesn't work
 
-* Loops
+* For Loops
+* Arrays
+* Switches
 * Calling Methods/Classes
 * Inheritence
-* Interfaces
 * Increment/Decrement
 * User Input
 * Comments
+
+### What I'm not gonna bother with
+* Interfaces (what does this even mean in a language without objects?)

@@ -24,6 +24,8 @@ statement = choice [ output
                    , declaration
                    , assignment
                    , ifThenElse
+                   , while
+                   , doWhile
                    ] <?> "statement"
 
 -- output --
@@ -109,13 +111,42 @@ ifThenElse = do
   terminator
   token_ Token.Newline
   then_ <- statements
-  else_ <- fromMaybe [] <$> optionMaybe (do
+  else_ <- optionMaybe $ do
     token_ Token.Else
     terminator
-    statements)
+    statements
   token_ Token.Fi
   terminator
   return Types.IfThenElse { Types.ifOnVal = val
                           , Types.ifThen = then_
-                          , Types.ifElse = else_
+                          , Types.ifElse = fromMaybe [] else_
                           }
+
+while :: Parser Types.Statement
+while = do
+  token_ Token.WhileStart
+  val <- value
+  terminator
+  token_ Token.Newline
+  body <- statements
+  token_ Token.WhileEnd
+  terminator
+  token_ Token.Newline
+  return Types.While { Types.whileVal  = val
+                     , Types.whileBody = body
+                     }
+
+doWhile :: Parser Types.Statement
+doWhile = do
+  token_ Token.DoWhileStart
+  terminator
+  token_ Token.Newline
+  body <- statements
+  token_ Token.DoWhileEnd
+  token_ Token.DoWhileEnd2
+  val <- value
+  terminator
+  token_ Token.Newline
+  return Types.DoWhile { Types.doWhileBody = body
+                       , Types.doWhileVal  = val
+                       }

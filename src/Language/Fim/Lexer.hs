@@ -68,6 +68,16 @@ lexToken' = choice
             ] $> Token.Else
   , rstring R_Thats_what_I_would_do $> Token.Fi
 
+  -- While loops
+  , rchoice [ R_Heres_what_I_did_while
+            , R_As_long_as
+            ] $> Token.WhileStart
+  , rstring R_Thats_what_I_did $> Token.WhileEnd
+  , rstring R_Heres_what_I_did $> Token.DoWhileStart
+  , rstring R_I_did_this $> Token.DoWhileEnd
+  , choice [ astring "while"
+           , astring "as long as"
+           ] $> Token.DoWhileEnd2
   , Token.NumberLiteral <$> numberLiteral
   , Token.CharLiteral   <$> charLiteral
   , Token.StringLiteral <$> stringLiteral
@@ -153,10 +163,11 @@ lexToken' = choice
   , rstring R_by $> Token.By
   , rstring R_I $> Token.I
 
-  , rchoice [ R_the
-            , R_an
-            , R_a
-            ] $> Token.Article
+  -- Never used at the start of a phrase
+  , choice [ astring "the"
+           , astring "an"
+           , astring "a"
+           ] $> Token.Article
 
   , rchoice [ R_yes
             , R_true

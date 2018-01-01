@@ -80,7 +80,12 @@ data Token = ClassStart
            | Then
            | Else
            | Fi
-
+           -- While loops
+           | WhileStart
+           | DoWhileStart
+           | WhileEnd
+           | DoWhileEnd
+           | DoWhileEnd2
            deriving (Show, Eq)
 
 -- Only match on types, not wrapped value

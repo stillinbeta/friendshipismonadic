@@ -60,3 +60,16 @@ evalStatement i@IfThenElse{} = do
               else ifElse i
   -- TODO should if/then/else be scoped?
   mapM_ evalStatement stmts
+
+evalStatement w@While{} = do
+  box <- evalValue $ whileVal w
+  branch <- boolOrError box
+  when branch $ do
+    mapM_ evalStatement $ whileBody w
+    evalStatement w
+
+evalStatement w@DoWhile{} = do
+  mapM_ evalStatement $ doWhileBody w
+  box <- evalValue $ doWhileVal w
+  branch <- boolOrError box
+  when branch $ evalStatement w

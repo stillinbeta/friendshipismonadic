@@ -182,6 +182,24 @@ main = hspec $ do
                                             That's what I would do.
                                            |]
         Fim.run program `shouldOutput` "I mean... Awake\n"
+    describe "loops" $ do
+      it "should run through loops" $ do
+        let program = wrapBoilerplate [text|Did you know that my book count is the number 3?
+                                            As long as my book count isn't 0:
+                                            I sang my book count!
+                                            my book count is now my book count minus 1.
+                                            That's what I did.
+                                            |]
+        Fim.run program `shouldOutput` "3\n2\n1\n"
+      it "should evaluate do while loops afterwards" $ do
+        let program =
+              wrapBoilerplate [text|Did you know that Applejack's apple harvest is the number 0?
+                                    Here's what I did:
+                                    Applejack's apple harvest is now Applejack's apple harvest plus 1.
+                                    I said Applejack's apple harvest.
+                                    I did this as long as Applejack's apple harvest is less than 3.
+                                   |]
+        Fim.run program `shouldOutput` "1\n2\n3\n"
 
 shouldOutput :: IO (Maybe String) -> String -> Expectation
 shouldOutput io str =
