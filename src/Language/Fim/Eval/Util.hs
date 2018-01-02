@@ -1,6 +1,7 @@
 {-# LANGUAGE FlexibleContexts, OverloadedStrings #-}
 
 module Language.Fim.Eval.Util ( printableLiteral
+                              , boxInput
                               , checkType
                               ) where
 
@@ -9,6 +10,7 @@ import qualified Language.Fim.Eval.Errors as Errors
 import Language.Fim.Types
 
 import qualified Data.Text as T
+import Data.Text.Read (signed, rational)
 import Control.Monad.Error.Class (throwError)
 
 checkType :: (Evaluator m) => ValueBox -> Maybe Type -> Variable -> m ()
@@ -36,3 +38,12 @@ printableLiteral literal =
       if abs (n - fromIntegral n') < 0.00000001
       then show n'
       else show n
+
+boxInput :: T.Text -> ValueBox
+boxInput t
+  | T.length t == 1 = CharacterBox $ T.head t
+  | t `elem` ["yes", "true", "right", "correct"]   = BooleanBox True
+  | t `elem` ["no", "false", "wrong", "incorrect"] = BooleanBox False
+  | otherwise = case signed rational t of
+                  Right (num, "") -> NumberBox num
+                  _ -> StringBox t

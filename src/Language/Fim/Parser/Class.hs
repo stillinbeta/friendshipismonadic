@@ -15,7 +15,6 @@ fimClass = do
   token_ Token.Colon
   name <- Types.Identifier <$> identifier
   terminator
-  token_ Token.Newline
   funcs <- methods
   fimClassSignoff
   return Types.Class { Types.className = name
@@ -34,4 +33,3 @@ fimClassSignoff = do
   token_ Token.ClassEnd
   token_ Token.tIdentifier
   terminator
-  token_ Token.Newline

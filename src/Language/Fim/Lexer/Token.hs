@@ -27,7 +27,6 @@ data Token = ClassStart
            | QuestionMark
            | ExclamationPoint
            | FullStop
-           | Newline
            | Colon
            | Comma
            | Ellipsis

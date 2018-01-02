@@ -34,6 +34,7 @@ runClassIO cls = do
     Right _ -> return Nothing
 
 instance Monad m => InputOutput (RWST T.Text T.Text s m) where
+  -- TODO: can only read one line of input per evaluation cycle
   getText = ask
   putText = tell . (`T.snoc` '\n')
 

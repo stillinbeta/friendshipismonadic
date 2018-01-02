@@ -49,18 +49,44 @@ main = hspec $ do
             ]
       Fim.parse program `shouldBe` Right expected
   describe "interpreter" $ do
-    it "should output Hello Equestria" $ do
-      let program = wrapBoilerplate "I thought “Hello, Equestria!”!\n"
-      Fim.run program "" `shouldOutput` "Hello, Equestria!\n"
-    it "should throw errors for unknown variables" $ do
-      let program = wrapBoilerplate "I sang Hello Equestria!\n"
-      Fim.run program "" `shouldError` "Undefined variable <Hello Equestria>"
-    it "should output from variables" $ do
-      let program = wrapBoilerplate
-            [text|Did you know that my greeting is the phrase “Hello, Equestria!”?
-                 I sang my greeting!
-                 |]
-      Fim.run program "" `shouldOutput` "Hello, Equestria!\n"
+    describe "input and output" $ do
+      it "should output Hello Equestria" $ do
+        let program = wrapBoilerplate "I thought “Hello, Equestria!”!\n"
+        Fim.run program "" `shouldOutput` "Hello, Equestria!\n"
+      it "should throw errors for unknown variables" $ do
+        let program = wrapBoilerplate "I sang Hello Equestria!\n"
+        Fim.run program "" `shouldError` "Undefined variable <Hello Equestria>"
+      it "should output from variables" $ do
+        let program = wrapBoilerplate
+              [text|Did you know that my greeting is the phrase “Hello, Equestria!”?
+                  I sang my greeting!
+                  |]
+        Fim.run program "" `shouldOutput` "Hello, Equestria!\n"
+      it "should accept number input" $ do
+        let program = wrapBoilerplate [text|I asked Spike's age.
+                                           I said Spike's age plus 1!
+                                           |]
+        Fim.run program "12" `shouldOutput` "13\n"
+      it "should accept boolean input" $ do
+        let program = wrapBoilerplate [text|I heard Something.
+                                           I said not Something!
+                                           |]
+        Fim.run program "yes" `shouldOutput` "false\n"
+      it "should accept string input" $ do
+        let program = wrapBoilerplate [text|I heard Something.
+                                           I said Something!
+                                           |]
+        Fim.run program "Hello, Equestria!" `shouldOutput` "Hello, Equestria!\n"
+      it "should error on incorrect input" $ do
+        let program = wrapBoilerplate [text|I asked Spike the next number.
+                                           |]
+        Fim.run program "Applejack" `shouldError`
+          "Can't assign string to variable <Spike> of type number"
+      it "should accept string input" $ do
+        let program = wrapBoilerplate [text|I asked Fluttershy: "What's all the fuss about?"?
+                                           I thought Fluttershy.
+                                           |]
+        Fim.run program "If that's okay" `shouldOutput` "What's all the fuss about?\nIf that's okay\n"
     describe "assigning to variables" $ do
       it "should output from redefined variables" $ do
         let program = wrapBoilerplate

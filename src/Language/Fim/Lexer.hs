@@ -22,13 +22,10 @@ lexTokens :: T.Text -> Either ParseError LexStream
 lexTokens = parse lexTokens' ""
 
 lexTokens' :: Parser [(SourcePos, Token.Token)]
-lexTokens' =  choice [ space' >> lexTokens'
+lexTokens' =  choice [ space >> lexTokens'
                      , eof $> []
                      , (:) <$> lexToken <*> lexTokens'
                      ]
-
-space' :: Parser Char
-space' = oneOf " \t"
 
 lexToken :: Parser (SourcePos, Token.Token)
 lexToken = (,) <$> getPosition <*> lexToken'
@@ -100,7 +97,6 @@ lexToken' = choice
   , char ',' $> Token.Comma
   , char '‽' $> Token.Interrobang
   , char '…' $> Token.Ellipsis
-  , newline  $> Token.Newline
 
   , astring "Did you know that" $> Token.VariableDec
   , rstring R_is $> Token.Is
@@ -247,7 +243,4 @@ endOfVariable = lookAhead $ punctuation <|> reservedWord
     matchWord = try . (space >>) . string
 
 pprint :: LexStream -> String
-pprint = unwords . map (show' . snd)
-  where show' x = case x of
-                    Token.Newline -> "\n"
-                    _ -> show x
+pprint = unwords . map (show . snd)

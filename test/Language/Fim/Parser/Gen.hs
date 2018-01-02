@@ -36,9 +36,9 @@ genClass = do
           , classSuper   = sSuper
           , classBody    = map s body
           }
-    (T.concat $ [ "Dear ", pSuper, ": ", pName, p1, "\n"]
+    (T.concat $ [ "Dear ", pSuper, ": ", pName, p1, " "]
              ++ map p body
-             ++ ["Your faithful student, ", studentName, p2, "\n"])
+             ++ ["Your faithful student, ", studentName, p2])
 
 genSuperClass :: Gen (WithText Class)
 genSuperClass =
@@ -85,9 +85,9 @@ genFunction = do
              , isMain = today
              , functionBody = map s body
              }
-    (T.concat $ [if today then "Today " else "", "I learned ", p name, p0, "\n"]
+    (T.concat $ [if today then "Today " else "", "I learned ", p name, p0, " "]
              ++ map p body
-             ++ ["That's all about ", p name, p1, "\n"]
+             ++ ["That's all about ", p name, p1]
     )
 
 genStatements :: Gen [WithText Statement]
@@ -115,7 +115,7 @@ genOutput = do
   p0 <- genPunctuation
   return $ WithText
     Output { outputValue = s val }
-    (T.concat ["I ", verb, " ", p val, p0, "\n"])
+    (T.concat ["I ", verb, " ", p val, p0])
 
 genInput :: Gen (WithText Statement)
 genInput = do
@@ -127,7 +127,7 @@ genInput = do
                      ]
   p0 <- genPunctuation
   var <- genVariable
-  let text = T.concat ["I ", verb,  " ", p var, p typ, p0, "\n"]
+  let text = T.concat ["I ", verb,  " ", p var, p typ, p0]
   return $ WithText Input { inputName = s var, inputType = s typ } text
 
 genPrompt :: Gen (WithText Statement)
@@ -135,7 +135,8 @@ genPrompt = do
   var <- genVariable
   val <- genValue
   p0 <- genPunctuation
-  let text = T.concat ["I asked ", p var, ": ", p val, p0, "\n"]
+  s0 <- genSpace
+  let text = T.concat ["I asked ", p var, ": ", p val, p0, s0]
   return $ WithText Prompt { promptName = s var, promptVal = s val} text
 
 genDeclaration :: Gen (WithText Statement)
@@ -155,7 +156,7 @@ genDeclaration = do
                 }
     (T.concat [ "Did you know that ", p name, " ", verb,
                if isConstant then " always " else " ",
-               p val, "?\n"
+               p val, "?"
                ]
     )
 
@@ -175,7 +176,7 @@ genAssignment = do
     Assignment { assignmentName = s var
                , assignmentExpr = s val
                }
-    (T.concat [ p var, " ", statement, " ", p val, p0, "\n"])
+    (T.concat [ p var, " ", statement, " ", p val, p0])
 
 genType :: Gen (WithText Type)
 genType = do
@@ -234,14 +235,18 @@ genIfThenElse = do
   prefix <- Gen.element ["If", "When"]
   suffix <- Gen.element ["", " then"]
   p1 <- genPunctuation
+  s0 <- genSpace
+  s1 <- genSpace
   p2 <- genPunctuation
+  s2 <- genSpace
   p3 <- genPunctuation
+  s3 <- genSpace
   otherwise_ <- Gen.element ["Otherwise", "Or else"]
-  let text = T.concat [ prefix, " ", p val, suffix, p1, "\n", sConcat then_
+  let text = T.concat [ prefix, s0, p val, suffix, p1, s1,  sConcat then_
                       , if null else_
                         then ""
-                        else T.concat [otherwise_, p2, " ", sConcat else_, "\n"]
-                      , "That's what I would do", p3, "\n"
+                        else T.concat [otherwise_, p2, s2, sConcat else_, s2]
+                      , "That's what I would do", p3, s3
                       ]
   let ife = IfThenElse { ifOnVal = s val
                        , ifThen = map s then_
@@ -254,15 +259,18 @@ genIfThenElse = do
 genWhile :: Gen (WithText Statement)
 genWhile = do
   stmts <- genStatements
+  s0 <- genSpace
   p1 <- genPunctuation
+  s1 <- genSpace
   p2 <- genPunctuation
+  s2 <- genSpace
   val <- genValue
   dec <- Gen.element [ "Here's what I did while"
                      , "As long as"
                      ]
-  let text = T.concat [ dec, " ", p val, p1, "\n"
+  let text = T.concat [ dec, s0, p val, p1, s1
                       , T.concat $ map p stmts
-                      , "That's what I did", p2, "\n"
+                      , "That's what I did", p2, s2
                       ]
   let typ = While { whileVal = s val
                   , whileBody = map s stmts
@@ -272,15 +280,18 @@ genWhile = do
 genDoWhile :: Gen (WithText Statement)
 genDoWhile = do
   stmts <- genStatements
+  s0 <- genSpace
   p1 <- genPunctuation
+  s1 <- genSpace
   p2 <- genPunctuation
+  s2 <- genSpace
   val <- genValue
   while <- Gen.element [ "while"
                        , "as long as"
                        ]
-  let text = T.concat [ "Here's what I did ", p1, "\n"
+  let text = T.concat [ "Here's what I did ", p1, s0
                       , T.concat $ map p stmts
-                      , "I did this ", while, " ", p val, p2, "\n"
+                      , "I did this ", while, s1, p val, p2, s2
                       ]
   let typ = DoWhile { doWhileBody = map s stmts
                     , doWhileVal  = s val
@@ -296,13 +307,16 @@ genFor = do
   var <- genVariable
   val1 <- genValue
   val2 <- genValue
+  s0 <- genSpace
   p1 <- genPunctuation
+  s1 <- genSpace
   p2 <- genPunctuation
+  s2 <- genSpace
   stmts <- genStatements
-  let text = T.concat [ "For every ", p typ, " ", p var
-                      , " from ", p val1, " to ", p val2, p1, "\n"
+  let text = T.concat [ "For every ", p typ, s0, p var
+                      , " from ", p val1, " to ", p val2, p1, s1
                       , T.concat $ map p stmts
-                      , "That's what I did", p2, "\n"
+                      , "That's what I did", p2, s2
                       ]
   let for = For { forVar  = s var
                 , forType = s typ
@@ -518,3 +532,10 @@ isValidVariable t
 
 invalidVariableHeadChars :: [Char]
 invalidVariableHeadChars = "\"‘“'-"
+
+genSpace :: Gen T.Text
+genSpace = Gen.element [ " "
+                       , "\n"
+                       , "\t"
+                       , "\r\n"
+                       ]

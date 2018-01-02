@@ -5,11 +5,12 @@ module Language.Fim.Parser.Statement ( statement
 import qualified Language.Fim.Types as Types
 -- import Language.Fim.Parser.Tokens (terminator)
 import Language.Fim.Parser.Value (value, variable)
-import Language.Fim.Parser.Util (Parser, token_, tokenChoice_, manyWithNewlines)
+import Language.Fim.Parser.Util (Parser, token_, tokenChoice_)
 import Language.Fim.Parser.Tokens (terminator)
 import Language.Fim.Parser.Literal (literal)
 import qualified Language.Fim.Lexer.Token as Token
 
+import Control.Applicative (many)
 import Data.Functor (($>))
 import Data.Maybe (isJust, fromMaybe)
 import Text.Parsec ((<?>), (<|>), try)
@@ -17,7 +18,7 @@ import Text.Parsec.Combinator (choice, optionMaybe, optional)
 
 
 statements :: Parser [Types.Statement]
-statements = manyWithNewlines statement
+statements = many statement
 
 statement :: Parser Types.Statement
 statement = choice [ io
@@ -42,7 +43,6 @@ output = do
   token_ Token.OutputVerb
   val <- value
   terminator
-  token_ Token.Newline
   return $ Types.Output val
 
 input :: Parser Types.Statement
@@ -53,7 +53,6 @@ input = do
     token_ Token.InputType
     declarationType
   terminator
-  token_ Token.Newline
   return Types.Input { Types.inputName = var
                      , Types.inputType = typ
                      }
@@ -66,7 +65,6 @@ prompt = do
   token_ Token.Colon
   val <- value
   terminator
-  token_ Token.Newline
   return Types.Prompt { Types.promptVal = val
                       , Types.promptName = var
                       }
@@ -90,7 +88,6 @@ declaration = do
                         , declarationVariable
                         ]
   terminator
-  token_ Token.Newline
   return Types.Declaration { Types.declareName = var
                            , Types.declareVal = val
                            , Types.declareType = typ
@@ -125,7 +122,6 @@ assignment = do
   assignmentVerb
   val <- value
   terminator
-  token_ Token.Newline
   return Types.Assignment { Types.assignmentName = var
                           , Types.assignmentExpr = val
                           }
@@ -143,7 +139,6 @@ ifThenElse = do
   val <- value
   optional $ token_ Token.Then
   terminator
-  token_ Token.Newline
   then_ <- statements
   else_ <- optionMaybe $ do
     token_ Token.Else
@@ -161,11 +156,9 @@ while = do
   token_ Token.WhileStart
   val <- value
   terminator
-  token_ Token.Newline
   body <- statements
   token_ Token.WhileEnd
   terminator
-  token_ Token.Newline
   return Types.While { Types.whileVal  = val
                      , Types.whileBody = body
                      }
@@ -174,13 +167,11 @@ doWhile :: Parser Types.Statement
 doWhile = do
   token_ Token.DoWhileStart
   terminator
-  token_ Token.Newline
   body <- statements
   token_ Token.DoWhileEnd
   token_ Token.DoWhileEnd2
   val <- value
   terminator
-  token_ Token.Newline
   return Types.DoWhile { Types.doWhileBody = body
                        , Types.doWhileVal  = val
                        }
@@ -198,7 +189,6 @@ for = do
   stmts <- statements
   token_ Token.WhileEnd
   terminator
-  token_ Token.Newline
   return Types.For { Types.forVar  = var
                    , Types.forType = typ
                    , Types.forFrom = val1

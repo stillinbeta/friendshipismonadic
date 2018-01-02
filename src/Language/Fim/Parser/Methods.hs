@@ -4,17 +4,18 @@ module Language.Fim.Parser.Methods ( method
 
 import qualified Language.Fim.Types as Types
 import Language.Fim.Parser.Tokens (terminator, identifier)
-import Language.Fim.Parser.Util (Parser, token, token_, manyWithNewlines)
+import Language.Fim.Parser.Util (Parser, token, token_)
 import Language.Fim.Parser.Statement (statements)
 import qualified Language.Fim.Lexer.Token as Token
 
+import Control.Applicative (many)
 import Control.Monad (unless)
 import Data.Maybe (isJust)
 import qualified Data.Text as T
 import Text.Parsec.Combinator (optionMaybe)
 
 methods :: Parser [Types.Function]
-methods = manyWithNewlines method
+methods = many method
 
 method :: Parser Types.Function
 method = do
@@ -22,10 +23,8 @@ method = do
   token_ Token.MethodDec
   name <- identifier
   terminator
-  token_ Token.Newline
   stmts <- statements
   methodEnd name
-  token_ Token.Newline
   return (Types.Function (Types.Identifier name) isMain stmts)
 
 methodEnd :: T.Text -> Parser ()

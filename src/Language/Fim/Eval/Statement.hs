@@ -4,12 +4,12 @@ module Language.Fim.Eval.Statement (evalStatement) where
 
 import Language.Fim.Eval.Types ( VariableBox(..) , ValueBox(..)
                                , Evaluator , variables , typeForBox
-                               , putText --, getText
+                               , putText, getText
                                )
 import Language.Fim.Types
 import qualified Language.Fim.Eval.Errors as Errors
 import Language.Fim.Eval.Value (evalValue, boolOrError)
-import Language.Fim.Eval.Util (printableLiteral, checkType)
+import Language.Fim.Eval.Util (printableLiteral, boxInput, checkType)
 
 import Prelude hiding (putStrLn)
 import Control.Applicative ((<|>))
@@ -24,22 +24,20 @@ evalStatement :: (Evaluator m) => Statement -> m ()
 evalStatement o@Output{} = do
   box <- evalValue $ outputValue o
   putText $ printableLiteral box
+evalStatement i@Input{} = do
+  text <- getText
+  let box = boxInput text
+  declareVariable (inputName i) box False (inputType i)
+evalStatement p@Prompt{} = do
+  evalStatement Output { outputValue = promptVal p}
+  evalStatement Input { inputName = promptName p
+                      , inputType = Nothing
+                      }
+
 evalStatement d@Declaration{} = do
   box <- maybe (pure NullBox) evalValue (declareVal d)
-  let var = declareName d
-  let vname = vName var
-  -- TODO: hang on to version information
-  checkType box (declareType d) var
-  -- Try to get a type from the box, if we don't have one already
-  let typ = (declareType d) <|> (typeForBox box)
-  let vbox = VariableBox { vboxValue = box
-                         , vboxIsConstant = declareIsConstant d
-                         , vboxType = typ
-                         }
-  m <- gets variables
-  when (Map.member vname m) $ throwError (Errors.redeclaredVariable var)
-  let m' = Map.insert vname vbox m
-  modify $ \s -> s {variables = m' }
+  declareVariable (declareName d) box (declareIsConstant d) (declareType d)
+
 evalStatement a@Assignment{} = do
   let aVar =  assignmentName a
   let aVarName = vName aVar
@@ -97,6 +95,22 @@ evalStatement f@For{} = do
       (CharacterBox c1, CharacterBox c2) -> pure $ map CharacterBox (range (c1, c2))
       (_, _) -> throwError $ Errors.cantDeduceAnd from to
 
+-- evalStatement Declare{} without the evaling, used by Declare{}, Prompt{}, and Input{}
+declareVariable :: Evaluator m => Variable -> ValueBox -> Bool -> Maybe Type -> m ()
+declareVariable var box isConstant typ = do
+-- TODO: hang on to version information
+  checkType box typ var
+  let vname = vName var
+  -- Try to get a type from the box, if we don't have one already
+  let typ' = typ <|> typeForBox box
+  let vbox = VariableBox { vboxValue = box
+                         , vboxIsConstant = isConstant
+                         , vboxType = typ'
+                         }
+  m <- gets variables
+  when (Map.member vname m) $ throwError (Errors.redeclaredVariable var)
+  let m' = Map.insert vname vbox m
+  modify $ \s -> s {variables = m' }
 
 -- Does not perform any checking!
 -- will not set new

@@ -35,16 +35,17 @@ stack test
 * Boolean Operators
 * Branching Statements
 * While and Do While, and For loops
+* User Input
 
 ### What doesn't work
 
 * Arrays
 * Switches
-* Calling Methods/Classes
-* Inheritence
+* Calling Methods
 * Increment/Decrement
-* User Input
 * Comments
 
 ### What I'm not gonna bother with
 * Interfaces (what does this even mean in a language without objects?)
+* Inheritence (Not much point without libraries)
+* More than one class (no syntax for calling other classes or creating objects)
