@@ -14,6 +14,7 @@ data Token = ClassStart
            | MainMethod
            | MethodDec
            | MethodDecEnd
+           | Call
            -- Identifier
            | Identifier T.Text
            -- Literals

@@ -61,6 +61,8 @@ data Statement = Output { outputValue :: Value
                      , forTo   :: Value
                      , forBody :: [Statement]
                      }
+               | Call { callVal :: Value
+                      }
                deriving (Eq, Show)
 
 data Value = VLiteral { vLiteral :: Literal}

@@ -101,6 +101,7 @@ genStatement = Gen.recursive
   , genPrompt
   , genDeclaration
   , genAssignment
+  , genCall
   ]
   [ genIfThenElse
   , genWhile
@@ -326,6 +327,13 @@ genFor = do
                 }
   return $ WithText for text
 
+genCall :: Gen (WithText Statement)
+genCall = do
+  val <- genValue
+  p0 <- genPunctuation
+  s0 <- genSpace
+  let text = T.concat ["I would ", p val, p0, s0]
+  return $ WithText Call {callVal = s val} text
 
 -----------
 -- Value --

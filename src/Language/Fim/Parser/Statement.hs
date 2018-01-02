@@ -28,6 +28,7 @@ statement = choice [ io
                    , while
                    , doWhile
                    , for
+                   , call
                    ] <?> "statement"
 
 -- output --
@@ -37,6 +38,7 @@ io = choice [ output
             , try prompt -- might consume PromptVerb before failing
             , input
             ]
+
 
 output :: Parser Types.Statement
 output = do
@@ -151,6 +153,7 @@ ifThenElse = do
                           , Types.ifElse = fromMaybe [] else_
                           }
 
+-- loops
 while :: Parser Types.Statement
 while = do
   token_ Token.WhileStart
@@ -195,3 +198,12 @@ for = do
                    , Types.forTo   = val2
                    , Types.forBody = stmts
                    }
+
+-- calling
+
+call :: Parser Types.Statement
+call = do
+  token_ Token.Call
+  val <- value
+  terminator
+  return Types.Call { Types.callVal = val }

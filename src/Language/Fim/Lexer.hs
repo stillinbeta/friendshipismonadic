@@ -48,6 +48,7 @@ lexToken' = choice
   , rstring R_Today $> Token.MainMethod
   , rstring R_I_learned $> Token.MethodDec
   , rstring R_Thats_all_about $> Token.MethodDecEnd
+  , rstring R_I_would $> Token.Call
 
   -- Input/output
   , rchoice [ R_I_said
