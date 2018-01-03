@@ -55,7 +55,7 @@ genPunctuation = T.singleton <$> Gen.element ".!?‽…:"
 genIdentifier :: Gen (WithText Identifier)
 genIdentifier = do
    name <- genName
-   return $ WithText (Identifier name) name
+   return $ WithText name name
 
 -- genTerminator :: Gen Terminator
 -- genTerminator = Gen.element [FullStop, Comma, QuestionMark, Exclamation]

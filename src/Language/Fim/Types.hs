@@ -6,7 +6,7 @@ module Language.Fim.Types ( Class(..)
                           , UnaryOperator(..)
                           , Literal(..)
                           , StringQuote(..)
-                          , Identifier(..)
+                          , Identifier
                           , Variable(..)
                           , Type(..)
                           ) where
@@ -18,7 +18,7 @@ data Class = Class { className :: Identifier
                    , classBody :: [Function]
                    }
            | Celestia
-           | ClassByName T.Text
+           | ClassByName Identifier
            deriving (Eq, Show)
 
 
@@ -88,7 +88,7 @@ data BinaryOperator = And -- And can be "Add" or "&&"
 data UnaryOperator = Not
                    deriving (Eq, Show)
 
-newtype Variable = Variable { vName :: T.Text
+newtype Variable = Variable { vName :: Identifier
                             } deriving (Eq, Show)
 
 data Literal = StringLiteral    { slValue :: T.Text }
@@ -111,5 +111,4 @@ instance Eq Literal where
 
 data StringQuote = SimpleQuote | FancyQuote deriving (Eq, Show)
 
-data Identifier = Identifier { idName :: T.Text
-                             } deriving (Eq, Show)
+type Identifier = T.Text

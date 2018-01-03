@@ -25,7 +25,7 @@ method = do
   terminator
   stmts <- statements
   methodEnd name
-  return (Types.Function (Types.Identifier name) isMain stmts)
+  return (Types.Function name isMain stmts)
 
 methodEnd :: T.Text -> Parser ()
 methodEnd idt = do

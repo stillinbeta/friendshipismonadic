@@ -5,12 +5,11 @@ module Language.Fim.Eval.Types ( ValueBox(..)
                                , boxLiteral
                                , Evaluator
                                , EvalState(..)
-                               , newEvalState
                                , typeForBox
                                , InputOutput(..)
                                ) where
 
-import Language.Fim.Types (Literal(..), Type(..))
+import Language.Fim.Types (Literal(..), Type(..), Function, Identifier)
 
 import Control.Monad.State.Class (MonadState)
 import Control.Monad.Error.Class (MonadError)
@@ -23,11 +22,9 @@ class Monad m => InputOutput m where
 
 type Evaluator m = (MonadState EvalState m, MonadError T.Text m, InputOutput m)
 
-data EvalState = EvalState { variables :: Map.Map T.Text VariableBox
+data EvalState = EvalState { variables :: Map.Map Identifier VariableBox
+                           , methods :: Map.Map Identifier Function
                            }
-newEvalState :: EvalState
-newEvalState = EvalState { variables = Map.empty
-                         }
 
 data VariableBox = VariableBox { vboxValue      :: ValueBox
                                , vboxIsConstant :: Bool

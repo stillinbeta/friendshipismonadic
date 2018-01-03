@@ -13,7 +13,7 @@ fimClass = do
   token_ Token.ClassStart
   superclass <- fimSuperClass <$> identifier
   token_ Token.Colon
-  name <- Types.Identifier <$> identifier
+  name <- identifier
   terminator
   funcs <- methods
   fimClassSignoff

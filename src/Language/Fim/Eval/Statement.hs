@@ -3,22 +3,31 @@
 module Language.Fim.Eval.Statement (evalStatement) where
 
 import Language.Fim.Eval.Types ( VariableBox(..) , ValueBox(..)
-                               , Evaluator , variables , typeForBox
-                               , putText, getText
+                               , Evaluator , variables, methods, typeForBox
+                               , putText, getText, boxLiteral
                                )
 import Language.Fim.Types
 import qualified Language.Fim.Eval.Errors as Errors
-import Language.Fim.Eval.Value (evalValue, boolOrError)
 import Language.Fim.Eval.Util (printableLiteral, boxInput, checkType)
 
 import Prelude hiding (putStrLn)
 import Control.Applicative ((<|>))
-import Control.Monad (when)
+import Control.Monad (when, void)
 import Control.Monad.Error.Class (throwError)
 import Control.Monad.State.Class (gets, modify)
+import Control.Monad.Trans.Maybe (MaybeT)
+import Control.Monad.Trans.Class (lift)
 import qualified Data.Map as Map
 import Data.Ix (range)
 
+
+evalMethod :: Evaluator m => [Statement] -> m ValueBox
+evalMethod stmts = do
+  vars <- gets variables
+  modify (\s -> s { variables = Map.empty})
+  mapM_ evalStatement stmts
+  modify (\s -> s {variables = vars})
+  return $ NullBox
 
 evalStatement :: (Evaluator m) => Statement -> m ()
 evalStatement o@Output{} = do
@@ -37,6 +46,8 @@ evalStatement p@Prompt{} = do
 evalStatement d@Declaration{} = do
   box <- maybe (pure NullBox) evalValue (declareVal d)
   declareVariable (declareName d) box (declareIsConstant d) (declareType d)
+evalStatement c@Call{} =
+  void . evalValue . callVal $ c
 
 evalStatement a@Assignment{} = do
   let aVar =  assignmentName a
@@ -120,3 +131,98 @@ setVariable var box = do
   m <- gets variables
   let m' = Map.adjust (\v -> v { vboxValue = box}) vname m
   modify $ \s -> s {variables = m' }
+
+
+-- Value was originally its own module But evaluating methods made that module
+-- mutually recursive with this one and that's no good
+
+evalValue :: (Evaluator m) => Value -> m ValueBox
+evalValue v = case v of
+               VVariable { vVariable = var } -> lookupIdentifier var
+               VLiteral { vLiteral = lit } -> return $ boxLiteral lit
+               VBinaryOperation { vBinArg1 = v1
+                                , vBinOpr  = opr
+                                , vBinArg2 = v2
+                                } -> do
+                 v1' <- evalValue v1
+                 v2' <- evalValue v2
+                 evalBinOp v1' v2' opr
+               VUnaryOperation { vUnArg = v1
+                               , vUnOpr = opr
+                               } -> do
+                 v1' <- evalValue v1
+                 evalUnOp v1' opr
+
+evalUnOp :: (Evaluator m) => ValueBox -> UnaryOperator -> m ValueBox
+evalUnOp v op = case op of
+  Not -> do
+    b <- boolOrError v
+    return $ BooleanBox $ not b
+
+evalBinOp :: (Evaluator m) => ValueBox -> ValueBox -> BinaryOperator -> m ValueBox
+evalBinOp v1 v2 binOp =
+  case binOp of
+    Add      -> doMath (+)
+    Multiply -> doMath (*)
+    Subtract -> doMath (-)
+    Divide   -> doMath (/)
+
+    EqualTo            -> doComparison (==EQ)
+    NotEqualTo         -> doComparison (/=EQ)
+    LessThan           -> doComparison (==LT)
+    LessThanOrEqual    -> doComparison (/=GT)
+    GreaterThan        -> doComparison (==GT)
+    GreaterThanOrEqual -> doComparison (/=LT)
+
+    Or -> doBool (||)
+    Xor -> doBool (/=)
+    And -> case (v1, v2) of
+             (BooleanBox b1, BooleanBox b2) -> return $ BooleanBox (b1 && b2)
+             (NumberBox n1, NumberBox n2)   -> return $ NumberBox  (n1  + n2)
+             (_, _) -> throwError $ Errors.cantDeduceAnd v1 v2
+  where
+    doMath opr = NumberBox <$>
+       (opr <$> numberOrError v1 <*> numberOrError v2)
+    doComparison cmp = BooleanBox . cmp <$> compareBox v1 v2
+    doBool opr = BooleanBox <$>
+      (opr <$> boolOrError v1 <*> boolOrError v2)
+
+numberOrError :: (Evaluator m) => ValueBox -> m Double
+numberOrError (NumberBox n) = pure n
+numberOrError v = throwError $ Errors.unexpectedType v TNumber
+
+boolOrError :: (Evaluator m) => ValueBox -> m Bool
+boolOrError (BooleanBox b) = pure b
+boolOrError v = throwError $ Errors.unexpectedType v TBoolean
+
+compareBox :: (Evaluator m) => ValueBox -> ValueBox -> m Ordering
+compareBox v1 v2 =
+  case (v1, v2) of
+    (NullBox, _) -> throwError Errors.compareNull
+    (_, NullBox) -> throwError Errors.compareNull
+    (NumberBox n1,    NumberBox n2)    -> pure (n1 `compare` n2)
+    (CharacterBox c1, CharacterBox c2) -> pure (c1 `compare` c2)
+    (StringBox s1,    StringBox s2)    -> pure (s1 `compare` s2)
+    (BooleanBox b1,   BooleanBox b2)   -> pure (b1 `compare` b2)
+    (_, _) -> pure (printableLiteral v1 `compare` printableLiteral v2)
+
+lookupIdentifier :: (Evaluator m) => Variable -> m ValueBox
+lookupIdentifier idt = do
+  meth <- lookupMethod idt
+  var <- lookupVariable idt
+  case (meth, var) of
+    (Just val, _) -> return val
+    (_, Just val) -> return val
+    _ -> throwError (Errors.undefinedVariable idt)
+
+lookupVariable :: (Evaluator m) => Variable -> m (Maybe ValueBox)
+lookupVariable Variable {vName = varName } = do
+  mv <- gets $ Map.lookup varName . variables
+  return $ vboxValue <$> mv
+
+lookupMethod :: (Evaluator m) => Variable -> m (Maybe ValueBox)
+lookupMethod Variable {vName = varName} = do
+  mf <- gets (Map.lookup varName . methods)
+  case mf of
+    Just f -> Just <$> evalMethod (functionBody f)
+    Nothing -> return Nothing

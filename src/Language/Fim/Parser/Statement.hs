@@ -32,7 +32,6 @@ statement = choice [ io
                    ] <?> "statement"
 
 -- output --
-
 io :: Parser Types.Statement
 io = choice [ output
             , try prompt -- might consume PromptVerb before failing
@@ -200,7 +199,6 @@ for = do
                    }
 
 -- calling
-
 call :: Parser Types.Statement
 call = do
   token_ Token.Call
