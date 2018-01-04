@@ -13,6 +13,8 @@ data Token = ClassStart
            -- Methods
            | MainMethod
            | MethodDec
+           | MethodReturn
+           | MethodArgs
            | MethodDecEnd
            | Call
            -- Identifier

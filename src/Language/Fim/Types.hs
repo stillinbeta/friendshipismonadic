@@ -1,5 +1,6 @@
 module Language.Fim.Types ( Class(..)
                           , Function(..)
+                          , Argument(..)
                           , Statement(..)
                           , Value(..)
                           , BinaryOperator(..)
@@ -23,8 +24,14 @@ data Class = Class { className :: Identifier
 
 
 data Function = Function { functionName :: Identifier
-                         , isMain :: Bool
+                         , functionIsMain :: Bool
                          , functionBody :: [Statement]
+                         , functionReturnType :: Maybe Type
+                         , functionArgs :: [Argument]
+                         } deriving (Eq, Show)
+
+data Argument = Argument { argName :: Identifier
+                         , argType :: Type
                          } deriving (Eq, Show)
 
 data Type = TNumber | TString | TCharacter | TBoolean deriving (Eq, Show)
@@ -67,6 +74,9 @@ data Statement = Output { outputValue :: Value
 
 data Value = VLiteral { vLiteral :: Literal}
            | VVariable { vVariable :: Variable}
+           | VMethodCall { vMethodName :: Identifier
+                         , vMethodArgs :: [Value]
+                         }
            | VBinaryOperation { vBinArg1 :: Value
                               , vBinOpr  :: BinaryOperator
                               , vBinArg2 :: Value

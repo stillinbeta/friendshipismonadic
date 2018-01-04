@@ -4,7 +4,8 @@ module Language.Fim.Lexer ( lexTokens
                           ) where
 
 import qualified Language.Fim.Lexer.Token as Token
-import Language.Fim.Lexer.Reserved (ReservedWords(..), toString, reservedWordList)
+import Language.Fim.Lexer.Reserved ( ReservedWords(..), toString
+                                   , reservedWordList)
 
 import Control.Monad (void, when)
 import Data.Functor (($>))
@@ -12,7 +13,8 @@ import Data.Maybe (catMaybes)
 import qualified Data.Text as T
 import Text.Parsec (ParseError, eof, parse, try, SourcePos, getPosition, (<|>))
 import Text.Parsec.Text (Parser)
-import Text.Parsec.Combinator (choice, optionMaybe, many1, manyTill, lookAhead)
+import Text.Parsec.Combinator ( choice, optionMaybe, many1, manyTill
+                              , lookAhead, notFollowedBy)
 import Text.Parsec.Char (string, char, newline, digit, anyChar, oneOf, space)
 
 
@@ -40,6 +42,14 @@ rstring = astring . toString
 rchoice :: [ReservedWords] -> Parser String
 rchoice = choice . map rstring
 
+-- Not followed by helper
+(/>>) :: ReservedWords -> String -> Parser String
+rw />> suffx = try $ do
+  s <- rstring rw
+  notFollowedBy $ astring suffx
+  return s
+
+
 lexToken' :: Parser Token.Token
 lexToken' = choice
   [ rstring R_Dear $> Token.ClassStart
@@ -48,7 +58,13 @@ lexToken' = choice
   , rstring R_Today $> Token.MainMethod
   , rstring R_I_learned $> Token.MethodDec
   , rstring R_Thats_all_about $> Token.MethodDecEnd
-  , rstring R_I_would $> Token.Call
+  , rchoice [ R_I_would
+            , R_I_remembered
+            ] $> Token.Call
+  , choice [ R_with />> "out"
+           , rstring R_to_get
+           ] $> Token.MethodReturn
+  , rstring R_using $> Token.MethodArgs
 
   -- Input/output
   , rchoice [ R_I_said

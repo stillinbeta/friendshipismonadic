@@ -8,11 +8,11 @@ import Language.Fim.Eval.Types ( VariableBox(..) , ValueBox(..)
                                )
 import Language.Fim.Types
 import qualified Language.Fim.Eval.Errors as Errors
-import Language.Fim.Eval.Util (printableLiteral, boxInput, checkType)
+import Language.Fim.Eval.Util (printableLiteral, boxInput, checkType, typeMatch)
 
 import Prelude hiding (putStrLn)
 import Control.Applicative ((<|>))
-import Control.Monad (when, void)
+import Control.Monad (when, unless, void)
 import Control.Monad.Error.Class (throwError)
 import Control.Monad.State.Class (gets, modify)
 import Control.Monad.Trans.Maybe (MaybeT)
@@ -21,13 +21,28 @@ import qualified Data.Map as Map
 import Data.Ix (range)
 
 
-evalMethod :: Evaluator m => [Statement] -> m ValueBox
-evalMethod stmts = do
+evalMethod :: Evaluator m => Function -> [ValueBox] -> m ValueBox
+evalMethod f args = do
+  -- save old variables
   vars <- gets variables
+  -- blank variables for new method
   modify (\s -> s { variables = Map.empty})
-  mapM_ evalStatement stmts
+  -- make sure args list is the right length
+  when (length args /= length (functionArgs f)) $
+    throwError (Errors.methodIncorrectArgCount f args)
+  -- populate the method's namespace with the args
+  mapM_ populateVars $ zip args (functionArgs f)
+  -- eval the method
+  mapM_ evalStatement (functionBody f)
+  -- put the old variables back
   modify (\s -> s {variables = vars})
-  return $ NullBox
+  -- TODO actual return value
+  return NullBox
+  where
+    populateVars (given, expected) = do
+      unless (typeMatch given (argType expected)) $
+        throwError $ Errors.methodIncorrectArgType f expected given
+      declareVariable (Variable $ argName expected) given False (Just $ argType expected)
 
 evalStatement :: (Evaluator m) => Statement -> m ()
 evalStatement o@Output{} = do
@@ -58,7 +73,7 @@ evalStatement a@Assignment{} = do
     Just var -> do
       when (vboxIsConstant var) $ throwError (Errors.assignToConstant aVar)
       box <- evalValue $ assignmentExpr a
-      checkType box (vboxType var) aVar
+      checkType box (vboxType var) aVarName
       setVariable aVar box
 evalStatement i@IfThenElse{} = do
   box <- evalValue $ ifOnVal i
@@ -106,11 +121,11 @@ evalStatement f@For{} = do
       (CharacterBox c1, CharacterBox c2) -> pure $ map CharacterBox (range (c1, c2))
       (_, _) -> throwError $ Errors.cantDeduceAnd from to
 
--- evalStatement Declare{} without the evaling, used by Declare{}, Prompt{}, and Input{}
+-- evalStatement Declare{} without the evaling, used by Declare{}, Prompt{},
+-- Input{}, and evalMethod
 declareVariable :: Evaluator m => Variable -> ValueBox -> Bool -> Maybe Type -> m ()
 declareVariable var box isConstant typ = do
--- TODO: hang on to version information
-  checkType box typ var
+  checkType box typ (vName var)
   let vname = vName var
   -- Try to get a type from the box, if we don't have one already
   let typ' = typ <|> typeForBox box
@@ -152,6 +167,14 @@ evalValue v = case v of
                                } -> do
                  v1' <- evalValue v1
                  evalUnOp v1' opr
+               VMethodCall { vMethodName = name
+                           , vMethodArgs = args
+                           } -> do
+                 argBoxes <- mapM evalValue args
+                 m <- gets methods
+                 case Map.lookup name m of
+                   Just f -> evalMethod f argBoxes
+                   Nothing -> throwError $ Errors.noSuchMethod name
 
 evalUnOp :: (Evaluator m) => ValueBox -> UnaryOperator -> m ValueBox
 evalUnOp v op = case op of
@@ -224,5 +247,5 @@ lookupMethod :: (Evaluator m) => Variable -> m (Maybe ValueBox)
 lookupMethod Variable {vName = varName} = do
   mf <- gets (Map.lookup varName . methods)
   case mf of
-    Just f -> Just <$> evalMethod (functionBody f)
+    Just f -> Just <$> evalMethod f []
     Nothing -> return Nothing

@@ -52,18 +52,8 @@ genClassByName = do
 genPunctuation :: Gen T.Text
 genPunctuation = T.singleton <$> Gen.element ".!?‽…:"
 
-genIdentifier :: Gen (WithText Identifier)
-genIdentifier = do
-   name <- genName
-   return $ WithText name name
-
 -- genTerminator :: Gen Terminator
 -- genTerminator = Gen.element [FullStop, Comma, QuestionMark, Exclamation]
-
-genName :: Gen T.Text
--- shrinks to Fluttershy, makes errors look a lil nicer :)
-genName = pure (T.pack "Fluttershy")
-          <|> Gen.text (Range.linear 1 100) (Gen.filter (not . isPunctuation) Gen.unicode)
 
 isPunctuation :: Char -> Bool
 isPunctuation char = case char of
@@ -76,19 +66,45 @@ isPunctuation char = case char of
 genFunction :: Gen (WithText Function)
 genFunction = do
   name <- genIdentifier
-  today <- Gen.bool_
+  today <- Gen.bool
   p0 <- genPunctuation
   p1 <- genPunctuation
   body <- genStatements
+  ret <- Gen.choice [pure Nothing,  Just <$> genType]
+  args <- Gen.list (Range.linear 0 5) genArgument
+  let argList = if null args
+        then ""
+        else " using " `T.append` T.intercalate " and " (map p args)
+  returnSig <- case ret of
+        Nothing -> pure ""
+        Just typ -> do
+          verb <- Gen.element ["with", "to get"]
+          return $ T.concat [" ", verb, " ", p typ]
   return $ WithText
     Function { functionName = s name
-             , isMain = today
+             , functionIsMain = today
              , functionBody = map s body
+             , functionReturnType = s <$> ret
+             , functionArgs = s <$> args
              }
-    (T.concat $ [if today then "Today " else "", "I learned ", p name, p0, " "]
+    (T.concat $ [if today then "Today " else "",
+                 "I learned ", p name
+                , returnSig
+                , argList
+                , p0, " "]
              ++ map p body
              ++ ["That's all about ", p name, p1]
     )
+
+genArgument :: Gen (WithText Argument)
+genArgument = do
+  typ <- genType
+  s0 <- genSpace
+  idt <- genIdentifier
+  let text = T.concat [p typ, s0, p idt]
+  return $ WithText Argument { argName = s idt
+                             , argType = s typ
+                             } text
 
 genStatements :: Gen [WithText Statement]
 genStatements = Gen.list (Range.linear 0 20) genStatement
@@ -329,10 +345,12 @@ genFor = do
 
 genCall :: Gen (WithText Statement)
 genCall = do
+  verb <- Gen.element ["I would", "I remembered"]
   val <- genValue
   p0 <- genPunctuation
   s0 <- genSpace
-  let text = T.concat ["I would ", p val, p0, s0]
+  s1 <- genSpace
+  let text = T.concat [verb, s0, p val, p0, s1]
   return $ WithText Call {callVal = s val} text
 
 -----------
@@ -355,6 +373,7 @@ genExpr = Gen.recursive
   -- Parser is left-greedy, so make left value shallow
   [ Gen.subtermM2 genShallowValue genExpr makeBinaryOperator
   , Gen.subtermM  genExpr genUnaryOperator
+  , genMethodCall
   ]
 
 makeBinaryOperator :: WithText Value -> WithText Value -> Gen (WithText Value)
@@ -459,6 +478,15 @@ genUnaryOperator val = do
   let text = T.intercalate " " [prefix, p val]
   return $ WithText typ text
 
+genMethodCall :: Gen (WithText Value)
+genMethodCall = do
+  args <- Gen.list (Range.linear 1 5) genShallowValue
+  idt <- genIdentifier
+  let text = T.intercalate " " [p idt, "using", T.intercalate " and " (p <$> args)]
+  return $ WithText VMethodCall { vMethodName = s idt
+                                , vMethodArgs = s <$> args
+                                } text
+
 --------------
 -- Literals --
 --------------
@@ -524,11 +552,20 @@ genStringLiteral = do
 ---------------
 -- Variables --
 ---------------
+genName :: Gen T.Text
+-- shrinks to Fluttershy, makes errors look a lil nicer :)
+genName = pure (T.pack "Fluttershy")
+          <|> Gen.text (Range.linear 1 100) (Gen.filter (not . isPunctuation) Gen.unicode)
+
+genIdentifier :: Gen (WithText Identifier)
+genIdentifier = do
+  idt <- Gen.filter isValidVariable genName
+  return $ WithText idt idt
+
 
 genVariable :: Gen (WithText Variable)
-genVariable = do
-  name <- Gen.filter isValidVariable genName
-  return $ WithText Variable { vName = name } name
+genVariable = wtLift Variable <$> genIdentifier
+
 
 isValidVariable :: T.Text -> Bool
 isValidVariable t

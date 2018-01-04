@@ -9,12 +9,15 @@ module Language.Fim.Eval.Errors ( noMainMethod
                                 , unexpectedType
                                 , variableTypeMismatch
                                 , iterateWrongType
+                                , methodIncorrectArgCount
+                                , methodIncorrectArgType
+                                , noSuchMethod
                                 ) where
 
 import qualified Language.Fim.Types as Types
 import qualified Language.Fim.Eval.Types as ETypes
 
-import Data.Text as T
+import qualified Data.Text as T
 
 noMainMethod :: T.Text
 noMainMethod = "No main method"
@@ -65,6 +68,34 @@ iterateWrongType box1 box2 =
                     , "and"
                     , boxTypeName box2
                     ]
+
+methodIncorrectArgCount :: Types.Function -> [ETypes.ValueBox] -> T.Text
+methodIncorrectArgCount f vboxes =
+  T.intercalate " " [ "Expected"
+                    , Types.functionName f
+                    , "to be called with"
+                    ,  showLength $ Types.functionArgs f
+                    , "arguments, but called with"
+                    , showLength vboxes
+                    , "arguments"
+                    ]
+  where showLength = T.pack . show . length
+
+methodIncorrectArgType :: Types.Function -> Types.Argument -> ETypes.ValueBox -> T.Text
+methodIncorrectArgType f arg vbox =
+  T.intercalate " " [ "Method"
+                    , Types.functionName f
+                    , "argument"
+                    , Types.argName arg
+                    , "has type"
+                    , typeName $ Types.argType arg
+                    , "but got type"
+                    , boxTypeName vbox
+                    ]
+
+noSuchMethod :: Types.Identifier -> T.Text
+noSuchMethod = ("No such method" `T.append`)
+
 
 -- utilities
 

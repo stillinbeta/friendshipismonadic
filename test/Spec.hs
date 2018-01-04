@@ -13,6 +13,8 @@ import System.IO (stderr)
 main :: IO ()
 main = hspec $ do
   describe "parser" $ do
+    -- basic checks to make sure the parser is behaving. Most complex error will
+    -- be caught by SpecHedgehog.hs
     it "should lex a simple, empty class" $ do
       let program = [text|Dear Princess Celestia: Hello World!
                           Your faithful student, Twilight Sparkle.|]
@@ -28,7 +30,7 @@ main = hspec $ do
 
                           Your faithful student, Twilight Sparkle.|]
       let expected = Class "Hello World" Celestia [
-            Function "something simple" True []
+            Function "something simple" True [] Nothing []
             ]
       Fim.parse program `shouldBe` Right expected
     it "should lex a simple hello world" $ do
@@ -45,7 +47,7 @@ main = hspec $ do
                 Output (
                     VLiteral (StringLiteral "Hello, World!")
                     )
-                ]
+                ] Nothing []
             ]
       Fim.parse program `shouldBe` Right expected
   describe "interpreter" $ do
@@ -258,6 +260,53 @@ main = hspec $ do
                                       That's all about something neat!
                                      |]
         Fim.run program "" `shouldOutput` "Hello, Equestria!\n"
+      it "should pass arguments to functions" $ do
+        let program = wrapClass
+              [text|Today I learned something cool.
+               I remembered something neat using 2 and 3!
+               That's all about something cool!
+
+               I learned something neat using the number x and the number y:
+               I said x plus y.
+               That's all about something neat!
+               |]
+        Fim.run program "" `shouldOutput` "5\n"
+      it "should error on incorrect number of arguments" $ do
+          let program = wrapClass
+                [text|Today I learned something cool.
+                I remembered something neat using 2 and 3!
+                That's all about something cool!
+
+                I learned something neat using the number x:
+                I said x!
+                That's all about something neat!
+                |]
+          Fim.run program "" `shouldError`
+            "Expected something neat to be called with 1 arguments, but called with 2 arguments"
+      it "should error or incorrect type of arguments" $ do
+          let program = wrapClass
+                [text|Today I learned something cool.
+                I remembered something neat using 2!
+                That's all about something cool!
+
+                I learned something neat using the letter c:
+                I said c!
+                That's all about something neat!
+                |]
+          Fim.run program "" `shouldError`
+            "Method something neat argument c has type character but got type number"
+      it "should return values" $ do
+          let program = wrapClass
+                [text|Today I learned something cool.
+                Did you know that the answer is something neat with 7 and 8?
+                I said the answer!
+                That's all about something cool!
+
+                I learned something neat using the number x and the number y?
+                Then you get x plus y!
+                That's all about something neat!
+                |]
+          Fim.run program "" `shouldOutput` "15\n"
 
 shouldOutput :: Either T.Text T.Text -> T.Text -> Expectation
 shouldOutput got expected =

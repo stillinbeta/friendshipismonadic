@@ -53,7 +53,7 @@ runClass cls input =
 
 evalClass :: (Evaluator m) => Class -> m ()
 evalClass cls = do
-  let maybeFunc = find isMain $ classBody cls
+  let maybeFunc = find functionIsMain $ classBody cls
   case maybeFunc of
     Just method -> evalMainMethod method
     Nothing -> throwError Errors.noMainMethod

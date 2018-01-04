@@ -1,5 +1,6 @@
 module Language.Fim.Parser.Statement ( statement
                                      , statements
+                                     , declarationType
                                      ) where
 
 import qualified Language.Fim.Types as Types

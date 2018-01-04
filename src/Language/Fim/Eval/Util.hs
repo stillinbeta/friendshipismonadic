@@ -3,26 +3,33 @@
 module Language.Fim.Eval.Util ( printableLiteral
                               , boxInput
                               , checkType
+                              , typeMatch
                               ) where
 
 import Language.Fim.Eval.Types (Evaluator, ValueBox(..))
 import qualified Language.Fim.Eval.Errors as Errors
 import Language.Fim.Types
 
+import Control.Monad (unless)
 import qualified Data.Text as T
 import Data.Text.Read (signed, rational)
 import Control.Monad.Error.Class (throwError)
 
-checkType :: (Evaluator m) => ValueBox -> Maybe Type -> Variable -> m ()
+typeMatch :: ValueBox -> Type -> Bool
+typeMatch box typ = case (box, typ) of
+    (NumberBox{},    TNumber)    -> True
+    (StringBox{},    TString)    -> True
+    (CharacterBox{}, TCharacter) -> True
+    (BooleanBox{},   TBoolean)   -> True
+    _ -> False
+
+checkType :: (Evaluator m) => ValueBox -> Maybe Type -> Identifier -> m ()
 checkType box typ var =
   case (box, typ) of
-    (_, Nothing) -> return ()
-    (NumberBox{},    Just TNumber)    -> return ()
-    (StringBox{},    Just TString)    -> return ()
-    (CharacterBox{}, Just TCharacter) -> return ()
-    (BooleanBox{},   Just TBoolean)   -> return ()
-    (NullBox, _) -> return ()
-    (_, Just typ') -> throwError $ Errors.variableTypeMismatch box var typ'
+    (_, Nothing)    -> return ()
+    (NullBox, _)    -> return ()
+    (_, Just typ') -> unless (typeMatch box typ') $
+                          throwError (Errors.variableTypeMismatch box (Variable var) typ')
 
 printableLiteral ::  ValueBox -> T.Text
 printableLiteral literal =

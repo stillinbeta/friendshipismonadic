@@ -7,6 +7,10 @@ reservedWordList = [ "Dear"
                    , "I learned"
                    , "That's all about"
                    , "I would"
+                   , "I remembered"
+                   , "with"
+                   , "to get"
+                   , "using"
                    -- literals
                    -- null
                    , "nothing"

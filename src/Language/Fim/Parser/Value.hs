@@ -7,7 +7,7 @@ import Language.Fim.Parser.Util (Parser, token, token_)
 import Language.Fim.Parser.Literal (literal)
 
 import Data.Functor (($>))
-import Text.Parsec.Combinator (choice)
+import Text.Parsec.Combinator (choice, sepBy1)
 import Text.Parsec ((<?>), (<|>), try)
 
 value :: Parser Types.Value
@@ -27,9 +27,15 @@ greedyValue = choice [ shallowValue
 shallowPrefix :: Parser Types.Value
 shallowPrefix = do
   val <- shallowValue
-  choice [ binaryOperatorInfix val
-         , pure val
-         ]
+  case val of
+    Types.VVariable Types.Variable {Types.vName = idt} ->
+      choice [ methodCall idt
+             , binaryOperatorInfix val
+             , pure val
+             ]
+    _ -> choice [ binaryOperatorInfix val
+                , pure val
+                ]
 
 unaryOperator :: Parser Types.Value
 unaryOperator = do
@@ -42,10 +48,13 @@ unaryOperator = do
                                , Types.vUnOpr = opr
                                }
 
-variable :: Parser Types.Variable
-variable = do
+identifier :: Parser Types.Identifier
+identifier = do
   Token.Identifier n <- token Token.tIdentifier
-  return $ Types.Variable n
+  return n
+
+variable :: Parser Types.Variable
+variable = Types.Variable <$> identifier
 
 shallowValue :: Parser Types.Value
 shallowValue =  choice [ Types.VLiteral  <$> literal  <?> "literal"
@@ -112,3 +121,12 @@ comparisonOperators = do
         neg' = neg <|> token_ Token.No
         moreThan = token_ Token.More >> token_ Token.Than
         lessThan = token_ Token.Less >> token_ Token.Than
+
+methodCall :: Types.Identifier -> Parser Types.Value
+methodCall idt = do
+  token_ Token.MethodArgs
+  -- If there's no arguments, "using" isn't valid
+  args <- sepBy1 greedyValue $ token_ Token.And
+  return Types.VMethodCall { Types.vMethodName = idt
+                           , Types.vMethodArgs = args
+                           }
