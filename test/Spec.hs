@@ -188,6 +188,40 @@ main = hspec $ do
       it "should support not" $ do
         let program = wrapMethod [text|I thought it's not the case that 19 is less than 18?|]
         Fim.run program "" `shouldOutput` "true\n"
+    describe "comments" $ do
+      it "should work anywhere" $ do
+        let program = wrapClass [text|(This is a comment!)
+                                     P.P.S. This is also a comment
+                                     Today I learned something awesome!
+                                     (They work here too!)
+                                     P.S. this kind also works!
+                                     I said "Rainbow Dash"!
+                                     That's all about something awesome!
+                                     P.P.P.S. Thanks for reading!
+                                     |]
+        Fim.run program "" `shouldOutput` "Rainbow Dash\n"
+      describe "with parentheses" $
+        it "should wrap around newlines" $ do
+          let program = wrapMethod [text|I said "I'm stitching Twilight's dress".
+                                         (I said "Never stressed!"
+                                          I said "Hook and eye, couldn't you just simply die!"
+                                         ) I said "The customer is always right"!
+                                        |]
+          Fim.run program "" `shouldOutput` "I'm stitching Twilight's dress\nThe customer is always right\n"
+      describe "with p.s." $ do
+        it "should support arbitrary many P.Ses" $ do
+          let program = wrapMethod [text|I said "I'm pancake"!
+                                         P.S. I was totally not asleep
+                                         P.P.S. Yes you were, Twilight
+                                         P.P.P.S. No editorialising, Spike!
+                                         P.P.P.P.S. Maybe you should write your own letters then!
+                                        |]
+          Fim.run program "" `shouldOutput` "I'm pancake\n"
+        it "should comment out until the end of the newline" $ do
+          let program = wrapMethod [text|I said "I am not tardy!". P.S. I totally wasn't!
+                                         I said "Everything is fine!"!
+                                         |]
+          Fim.run program "" `shouldOutput` "I am not tardy!\nEverything is fine!\n"
     describe "conditional logic" $ do
       it "should error on non-booleans" $ do
         let program = wrapMethod [text|When "Chimicherrychanga":

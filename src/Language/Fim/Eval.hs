@@ -32,6 +32,7 @@ newEvalState Class { classBody = fs } =
 newEvalState Celestia = error "can't evaluate Celestia!"
 newEvalState ClassByName{} = error "can't evaluate abstract class!"
 
+-- TODO fix these orphans
 instance InputOutput (StateT s (ExceptT e IO)) where
   getText = liftIO TIO.getLine
   putText = liftIO . TIO.putStrLn

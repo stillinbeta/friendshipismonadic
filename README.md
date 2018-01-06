@@ -37,13 +37,13 @@ stack test
 * While and Do While, and For loops
 * User Input
 * Calling Methods
+* Comments
 
 ### What doesn't work
 
 * Arrays
 * Switches
 * Increment/Decrement
-* Comments
 
 ### What I'm not gonna bother with
 * Interfaces (what does this even mean in a language without objects?)

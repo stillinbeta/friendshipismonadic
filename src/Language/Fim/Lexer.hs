@@ -25,9 +25,23 @@ lexTokens = parse lexTokens' ""
 
 lexTokens' :: Parser [(SourcePos, Token.Token)]
 lexTokens' =  choice [ space >> lexTokens'
+                     , comment >> lexTokens'
                      , eof $> []
                      , (:) <$> lexToken <*> lexTokens'
                      ]
+
+comment :: Parser ()
+comment = void $ choice [ try psComment
+                        , parenComment -- paren isn't ambiguous, P. is
+                        ]
+  where
+    psComment = do
+      many1 $ string "P."
+      string "S."
+      manyTill anyChar newline
+    parenComment = do
+      char '('
+      manyTill anyChar (char ')')
 
 lexToken :: Parser (SourcePos, Token.Token)
 lexToken = (,) <$> getPosition <*> lexToken'
