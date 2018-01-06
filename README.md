@@ -36,12 +36,12 @@ stack test
 * Branching Statements
 * While and Do While, and For loops
 * User Input
+* Calling Methods
 
 ### What doesn't work
 
 * Arrays
 * Switches
-* Calling Methods
 * Increment/Decrement
 * Comments
 

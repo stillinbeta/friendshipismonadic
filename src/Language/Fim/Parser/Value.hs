@@ -1,5 +1,6 @@
 module Language.Fim.Parser.Value (value
-                                 , variable) where
+                                 , variable
+                                 , methodCall) where
 
 import qualified Language.Fim.Types as Types
 import qualified Language.Fim.Lexer.Token as Token
@@ -17,7 +18,8 @@ value = choice [ shallowPrefix
                ]
 
 greedyValue :: Parser Types.Value
-greedyValue = choice [ shallowValue
+greedyValue = choice [ try $ shallowValue >>= methodCall
+                     , shallowValue
                      , unaryOperator
                      , binaryOperatorPrefix
                      , shallowValue >>= binaryOperatorInfix
@@ -27,15 +29,10 @@ greedyValue = choice [ shallowValue
 shallowPrefix :: Parser Types.Value
 shallowPrefix = do
   val <- shallowValue
-  case val of
-    Types.VVariable Types.Variable {Types.vName = idt} ->
-      choice [ methodCall idt
-             , binaryOperatorInfix val
-             , pure val
-             ]
-    _ -> choice [ binaryOperatorInfix val
-                , pure val
-                ]
+  choice [ methodCall val
+         , binaryOperatorInfix val
+         , pure val
+         ]
 
 unaryOperator :: Parser Types.Value
 unaryOperator = do
@@ -112,21 +109,21 @@ comparisonOperators = do
   -- don't consume a Not then fail
   choice [ try (neg' >> moreThan)  $> Types.LessThanOrEqual
          , try (neg' >> lessThan)  $> Types.GreaterThanOrEqual
-         , neg              $> Types.NotEqualTo
-         , moreThan         $> Types.GreaterThan
-         , lessThan         $> Types.LessThan
-         , pure                Types.EqualTo
+         , neg                     $> Types.NotEqualTo
+         , moreThan                $> Types.GreaterThan
+         , lessThan                $> Types.LessThan
+         , pure                       Types.EqualTo
          ]
   where neg = token_ Token.Not <|> token_ Token.Nt
         neg' = neg <|> token_ Token.No
         moreThan = token_ Token.More >> token_ Token.Than
         lessThan = token_ Token.Less >> token_ Token.Than
 
-methodCall :: Types.Identifier -> Parser Types.Value
-methodCall idt = do
+methodCall :: Types.Value -> Parser Types.Value
+methodCall (Types.VVariable (Types.Variable idt)) = do
   token_ Token.MethodArgs
-  -- If there's no arguments, "using" isn't valid
   args <- sepBy1 greedyValue $ token_ Token.And
   return Types.VMethodCall { Types.vMethodName = idt
                            , Types.vMethodArgs = args
                            }
+methodCall _ = fail "wrong argument type"

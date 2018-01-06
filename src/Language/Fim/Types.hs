@@ -70,6 +70,8 @@ data Statement = Output { outputValue :: Value
                      }
                | Call { callVal :: Value
                       }
+               | Return { returnVal :: Value
+                        }
                deriving (Eq, Show)
 
 data Value = VLiteral { vLiteral :: Literal}

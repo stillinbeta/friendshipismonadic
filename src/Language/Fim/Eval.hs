@@ -10,8 +10,9 @@ import Language.Fim.Eval.Types ( Evaluator
                                , InputOutput(..)
                                )
 import qualified Language.Fim.Eval.Errors as Errors
-import Language.Fim.Eval.Statement (evalStatement)
+import Language.Fim.Eval.Statement (evalStatements)
 
+import Control.Monad (void)
 import Control.Monad.State (runStateT, StateT)
 import Control.Monad.RWS (execRWST, RWST, tell, ask)
 import Control.Monad.Except (runExceptT, ExceptT)
@@ -59,4 +60,4 @@ evalClass cls = do
     Nothing -> throwError Errors.noMainMethod
 
 evalMainMethod :: (Evaluator m) => Function -> m ()
-evalMainMethod mthd = mapM_ evalStatement $ functionBody mthd
+evalMainMethod = void . evalStatements . functionBody

@@ -9,5 +9,8 @@ However, in some cases the spec as written was ambiguous, impossible to implemen
   age` into `I asked Fluttershy (her age)` vs `I asked (Fluttershy her) age`. To
   prevent this, I have changed the syntax to
   `I asked <variable name><colon><whitespace><value><punctuation>`
+* The spec says variable declarations can either be typed literals or untyped
+  variables. I extended the latter case to also include method calls, which
+  function very similar to variables in the trivial case.
 
 [spec]: https://docs.google.com/document/d/1gU-ZROmZu0Xitw_pfC1ktCDvJH5rM85TxxQf5pg_xmg/edit?pli=1#

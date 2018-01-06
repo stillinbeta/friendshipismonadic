@@ -17,6 +17,7 @@ data Token = ClassStart
            | MethodArgs
            | MethodDecEnd
            | Call
+           | Return
            -- Identifier
            | Identifier T.Text
            -- Literals

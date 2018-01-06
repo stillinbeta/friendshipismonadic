@@ -212,11 +212,11 @@ main = hspec $ do
     describe "loops" $ do
       it "should run through loops" $ do
         let program = wrapMethod [text|Did you know that my book count is the number 3?
-                                            As long as my book count isn't 0:
-                                            I sang my book count!
-                                            my book count is now my book count minus 1.
-                                            That's what I did.
-                                            |]
+                                      As long as my book count isn't 0:
+                                      I sang my book count!
+                                      my book count is now my book count minus 1.
+                                      That's what I did.
+                                      |]
         Fim.run program "" `shouldOutput` "3\n2\n1\n"
       it "should evaluate do while loops afterwards" $ do
         let program =
@@ -295,18 +295,83 @@ main = hspec $ do
                 |]
           Fim.run program "" `shouldError`
             "Method something neat argument c has type character but got type number"
-      it "should return values" $ do
+      it "should consider methods over variables when namespaces collide." $ do
+        let program = wrapClass
+              [text|Today I learned something cool.
+                    Did you know that something neat is the phrase "Fluttershy"?
+                    I said something neat.
+                    That's all about something cool!
+
+                    I learned something neat with a phrase:
+                    Then you get "Soarin's Apple Pie".
+                    That's all about something neat.
+                    |]
+        Fim.run program "" `shouldOutput` "Soarin's Apple Pie\n"
+      describe "return values" $ do
+        it "should be produced by methods " $ do
+            let program = wrapClass
+                  [text|Today I learned something cool.
+                  Did you know that my answer is something neat using 7 and 8?
+                  I said my answer!
+                  That's all about something cool!
+
+                  I learned something neat with a number using the number x and the number y:
+                  Then you get x plus y!
+                  That's all about something neat!
+                  |]
+            Fim.run program "" `shouldOutput` "15\n"
+        it "should interrupt execution" $ do
+          let program = wrapMethod [text|I said "Hello Applejack!".
+                                         Then you get nothing.
+                                         I said "Hello Spike!".
+                                        |]
+          Fim.run program "" `shouldOutput` "Hello Applejack!\n"
+        it "should break out of loops" $ do
+          let program = wrapMethod [text|Did you know that my book count is the number 3?
+                                         As long as my book count isn't 0:
+                                         I sang my book count!
+                                         my book count is now my book count minus 1.
+                                         Then you get nothing.
+                                         That's what I did.
+
+                                        |]
+          Fim.run program "" `shouldOutput` "3\n"
+        it "should work from inside if statements" $ do
           let program = wrapClass
                 [text|Today I learned something cool.
-                Did you know that the answer is something neat with 7 and 8?
-                I said the answer!
-                That's all about something cool!
+                      I said something neat using yes.
+                      That's all about something cool!
 
-                I learned something neat using the number x and the number y?
-                Then you get x plus y!
-                That's all about something neat!
-                |]
-          Fim.run program "" `shouldOutput` "15\n"
+                      I learned something neat with a phrase using the argument arg:
+                      If arg: Then you get "you're right!"!
+                      Otherwise: Then you get "you're wrong.".
+                      That's what I would do.
+                      That's all about something neat.
+                    |]
+          Fim.run program "" `shouldOutput` "you're right!\n"
+        it "should return nothing with no return" $ do
+          let program = wrapClass
+                [text|Today I learned something cool.
+                      I said something neat.
+                      That's all about something cool!
+
+                      I learned something neat:
+                      I remembered "Soarin's Apple Pie".
+                      That's all about something neat.
+                      |]
+          Fim.run program "" `shouldOutput` "nothing\n"
+        it "should error when returning the wrong type" $ do
+          let program = wrapClass
+                [text|Today I learned something cool.
+                      I remembered something neat.
+                      That's all about something cool!
+
+                      I learned something neat with a phrase:
+                      Then you get 17.
+                      That's all about something neat.
+                      |]
+          Fim.run program "" `shouldError`
+            "Method something neat has return type string but tried to return number"
 
 shouldOutput :: Either T.Text T.Text -> T.Text -> Expectation
 shouldOutput got expected =

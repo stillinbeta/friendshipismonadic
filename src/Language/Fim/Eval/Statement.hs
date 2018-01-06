@@ -1,6 +1,6 @@
 {-# LANGUAGE FlexibleContexts #-}
 
-module Language.Fim.Eval.Statement (evalStatement) where
+module Language.Fim.Eval.Statement (evalStatements) where
 
 import Language.Fim.Eval.Types ( VariableBox(..) , ValueBox(..)
                                , Evaluator , variables, methods, typeForBox
@@ -11,15 +11,13 @@ import qualified Language.Fim.Eval.Errors as Errors
 import Language.Fim.Eval.Util (printableLiteral, boxInput, checkType, typeMatch)
 
 import Prelude hiding (putStrLn)
-import Control.Applicative ((<|>))
-import Control.Monad (when, unless, void)
+import Control.Applicative ((<|>), empty)
+import Control.Monad (when, unless, void, foldM)
 import Control.Monad.Error.Class (throwError)
 import Control.Monad.State.Class (gets, modify)
-import Control.Monad.Trans.Maybe (MaybeT)
-import Control.Monad.Trans.Class (lift)
 import qualified Data.Map as Map
+import Data.Maybe (fromMaybe)
 import Data.Ix (range)
-
 
 evalMethod :: Evaluator m => Function -> [ValueBox] -> m ValueBox
 evalMethod f args = do
@@ -33,37 +31,55 @@ evalMethod f args = do
   -- populate the method's namespace with the args
   mapM_ populateVars $ zip args (functionArgs f)
   -- eval the method
-  mapM_ evalStatement (functionBody f)
+  res <- evalStatements (functionBody f)
   -- put the old variables back
   modify (\s -> s {variables = vars})
-  -- TODO actual return value
-  return NullBox
+  -- always return something
+  let retVal = fromMaybe NullBox res
+  let goodReturn = case (retVal, functionReturnType f) of
+        (NullBox, Nothing) -> True
+        (_, Nothing) -> False
+        (_, Just typ) -> typeMatch retVal typ
+  if goodReturn
+    then return retVal
+    else throwError $ Errors.methodIncorrectReturn f retVal
+
   where
     populateVars (given, expected) = do
       unless (typeMatch given (argType expected)) $
         throwError $ Errors.methodIncorrectArgType f expected given
       declareVariable (Variable $ argName expected) given False (Just $ argType expected)
 
-evalStatement :: (Evaluator m) => Statement -> m ()
+evalStatements :: Evaluator m => [Statement] -> m (Maybe ValueBox)
+evalStatements = foldM evalStatements' Nothing
+
+evalStatements' :: Evaluator m => Maybe ValueBox -> Statement -> m (Maybe ValueBox)
+evalStatements' box stmt = pure box <||> evalStatement stmt
+
+evalStatement :: (Evaluator m) => Statement -> m (Maybe ValueBox)
 evalStatement o@Output{} = do
   box <- evalValue $ outputValue o
   putText $ printableLiteral box
+  noReturn
 evalStatement i@Input{} = do
   text <- getText
   let box = boxInput text
   declareVariable (inputName i) box False (inputType i)
+  noReturn
 evalStatement p@Prompt{} = do
-  evalStatement Output { outputValue = promptVal p}
-  evalStatement Input { inputName = promptName p
+  void $ evalStatement Output { outputValue = promptVal p}
+  void $ evalStatement Input { inputName = promptName p
                       , inputType = Nothing
                       }
-
+  noReturn
 evalStatement d@Declaration{} = do
   box <- maybe (pure NullBox) evalValue (declareVal d)
   declareVariable (declareName d) box (declareIsConstant d) (declareType d)
+  noReturn
 evalStatement c@Call{} =
-  void . evalValue . callVal $ c
-
+  Nothing <$ evalValue (callVal c)
+evalStatement r@Return{} =
+  Just <$> evalValue (returnVal r)
 evalStatement a@Assignment{} = do
   let aVar =  assignmentName a
   let aVarName = vName aVar
@@ -75,6 +91,7 @@ evalStatement a@Assignment{} = do
       box <- evalValue $ assignmentExpr a
       checkType box (vboxType var) aVarName
       setVariable aVar box
+  noReturn
 evalStatement i@IfThenElse{} = do
   box <- evalValue $ ifOnVal i
   branch <- boolOrError box
@@ -82,20 +99,22 @@ evalStatement i@IfThenElse{} = do
               then ifThen i
               else ifElse i
   -- TODO should if/then/else be scoped?
-  mapM_ evalStatement stmts
+  evalStatements stmts
 
 evalStatement w@While{} = do
   box <- evalValue $ whileVal w
   branch <- boolOrError box
-  when branch $ do
-    mapM_ evalStatement $ whileBody w
-    evalStatement w
+  if branch
+    then evalStatements (whileBody w) <||> evalStatement w
+    else noReturn
 
-evalStatement w@DoWhile{} = do
-  mapM_ evalStatement $ doWhileBody w
-  box <- evalValue $ doWhileVal w
-  branch <- boolOrError box
-  when branch $ evalStatement w
+evalStatement w@DoWhile{} =
+  evalStatements (doWhileBody w) <||> do
+      box <- evalValue $ doWhileVal w
+      branch <- boolOrError box
+      if branch
+        then evalStatement w
+        else noReturn
 
 evalStatement f@For{} = do
   from <- evalValue $ forFrom f
@@ -103,17 +122,18 @@ evalStatement f@For{} = do
   let var = forVar f
   let typ = forType f
   vals <- boxRange from to
-  evalStatement Declaration { declareName = var
-                            , declareVal = Nothing
-                            , declareIsConstant = False
-                            , declareType = Just typ
-                            }
+  void $ evalStatement Declaration { declareName = var
+                                   , declareVal = Nothing
+                                   , declareIsConstant = False
+                                   , declareType = Just typ
+                                   }
   let doIter val = do
         setVariable var val
-        mapM_ evalStatement $ forBody f
-  mapM_ doIter vals
+        evalStatements $ forBody f
+  foldM (\vbox num -> pure vbox <||> doIter num) empty vals
   where
     boxRange from to = case (from, to) of
+      -- grumble grumble floating point types
       (NumberBox n1, NumberBox n2) ->
         let n1' = round n1 :: Int
             n2' = round n2 :: Int in
@@ -237,15 +257,23 @@ lookupIdentifier idt = do
     (Just val, _) -> return val
     (_, Just val) -> return val
     _ -> throwError (Errors.undefinedVariable idt)
+  where
+    lookupVariable Variable {vName = varName } = do
+      mv <- gets $ Map.lookup varName . variables
+      return $ vboxValue <$> mv
+    lookupMethod Variable {vName = varName} = do
+      mf <- gets (Map.lookup varName . methods)
+      case mf of
+        Just f -> Just <$> evalMethod f []
+        Nothing -> return Nothing
 
-lookupVariable :: (Evaluator m) => Variable -> m (Maybe ValueBox)
-lookupVariable Variable {vName = varName } = do
-  mv <- gets $ Map.lookup varName . variables
-  return $ vboxValue <$> mv
+noReturn :: Monad m => m (Maybe a)
+noReturn = pure Nothing
 
-lookupMethod :: (Evaluator m) => Variable -> m (Maybe ValueBox)
-lookupMethod Variable {vName = varName} = do
-  mf <- gets (Map.lookup varName . methods)
-  case mf of
-    Just f -> Just <$> evalMethod f []
-    Nothing -> return Nothing
+-- Short-circuit evaluation if we already have a value
+(<||>) :: (Monad m) => m (Maybe b) -> m (Maybe b) -> m (Maybe b)
+w1 <||> w2 = do
+  m1 <- w1
+  case m1 of
+    Just{} -> pure m1
+    Nothing -> w2

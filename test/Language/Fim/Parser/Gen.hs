@@ -118,6 +118,7 @@ genStatement = Gen.recursive
   , genDeclaration
   , genAssignment
   , genCall
+  , genReturn
   ]
   [ genIfThenElse
   , genWhile
@@ -352,6 +353,14 @@ genCall = do
   s1 <- genSpace
   let text = T.concat [verb, s0, p val, p0, s1]
   return $ WithText Call {callVal = s val} text
+
+genReturn :: Gen (WithText Statement)
+genReturn = do
+  val <- genValue
+  p0 <- genPunctuation
+  s0 <- genSpace
+  let text = T.concat ["Then you get ", p val, p0, s0]
+  return $ WithText Return {returnVal = s val} text
 
 -----------
 -- Value --

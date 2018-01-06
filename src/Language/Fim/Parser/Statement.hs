@@ -5,7 +5,7 @@ module Language.Fim.Parser.Statement ( statement
 
 import qualified Language.Fim.Types as Types
 -- import Language.Fim.Parser.Tokens (terminator)
-import Language.Fim.Parser.Value (value, variable)
+import Language.Fim.Parser.Value (value, variable, methodCall)
 import Language.Fim.Parser.Util (Parser, token_, tokenChoice_)
 import Language.Fim.Parser.Tokens (terminator)
 import Language.Fim.Parser.Literal (literal)
@@ -30,6 +30,7 @@ statement = choice [ io
                    , doWhile
                    , for
                    , call
+                   , return_
                    ] <?> "statement"
 
 -- output --
@@ -104,8 +105,10 @@ declarationTyped = do
 
 declarationVariable :: Parser (Maybe Types.Type, Maybe Types.Value)
 declarationVariable = do
-  var <- variable
-  return (Nothing, Just $ Types.VVariable var)
+  val <- Types.VVariable <$> variable
+  -- Try to turn it into a method call if possible
+  val' <- methodCall val <|> pure val
+  return (Nothing, Just val')
 
 declarationType :: Parser Types.Type
 declarationType = do
@@ -206,3 +209,11 @@ call = do
   val <- value
   terminator
   return Types.Call { Types.callVal = val }
+
+-- returning
+return_ :: Parser Types.Statement
+return_ = do
+  token_ Token.Return
+  val <- value
+  terminator
+  return Types.Return { Types.returnVal = val }

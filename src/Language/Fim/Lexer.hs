@@ -32,9 +32,18 @@ lexTokens' =  choice [ space >> lexTokens'
 lexToken :: Parser (SourcePos, Token.Token)
 lexToken = (,) <$> getPosition <*> lexToken'
 
--- Atomic string. Managing "try" everywhere is a pain
+-- Atomic string. Managing "try" everywhere is a pain. We only care about
+-- identifiers if they're the entirety of the word. Being part of the string
+-- doesn't matter.
 astring :: String -> Parser String
-astring = try . string
+astring str = try $ do
+  strMatch <- string str
+  -- don't match substrings, just the end of a token.
+  lookAhead $ choice [ void  space
+                     , void (oneOf "?!.:,‽…")
+                     , void (try $ string "n't") -- special case: tokens can match a n't
+                     ]
+  return strMatch
 
 rstring :: ReservedWords -> Parser String
 rstring = astring . toString
@@ -55,6 +64,7 @@ lexToken' = choice
   [ rstring R_Dear $> Token.ClassStart
   , astring "Your faithful student," $> Token.ClassEnd
 
+  -- Methods
   , rstring R_Today $> Token.MainMethod
   , rstring R_I_learned $> Token.MethodDec
   , rstring R_Thats_all_about $> Token.MethodDecEnd
@@ -65,6 +75,7 @@ lexToken' = choice
            , rstring R_to_get
            ] $> Token.MethodReturn
   , rstring R_using $> Token.MethodArgs
+  , rstring R_Then_you_get $> Token.Return
 
   -- Input/output
   , rchoice [ R_I_said

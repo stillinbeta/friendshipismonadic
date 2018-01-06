@@ -12,6 +12,7 @@ module Language.Fim.Eval.Errors ( noMainMethod
                                 , methodIncorrectArgCount
                                 , methodIncorrectArgType
                                 , noSuchMethod
+                                , methodIncorrectReturn
                                 ) where
 
 import qualified Language.Fim.Types as Types
@@ -96,6 +97,17 @@ methodIncorrectArgType f arg vbox =
 noSuchMethod :: Types.Identifier -> T.Text
 noSuchMethod = ("No such method" `T.append`)
 
+methodIncorrectReturn :: Types.Function -> ETypes.ValueBox -> T.Text
+methodIncorrectReturn f vbox =
+  let returnType = case Types.functionReturnType f of
+        Just typ -> "has return type " `T.append` typeName typ
+        Nothing -> "does not return a value" in
+      T.intercalate " " [ "Method"
+                        , Types.functionName f
+                        , returnType
+                        , "but tried to return"
+                        , boxTypeName vbox
+                        ]
 
 -- utilities
 
