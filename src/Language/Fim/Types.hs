@@ -70,6 +70,10 @@ data Statement = Output { outputValue :: Value
                      }
                | Call { callVal :: Value
                       }
+               | Increment { incrVar :: Variable
+                           }
+               | Decrement { decVar :: Variable
+                           }
                | Return { returnVal :: Value
                         }
                deriving (Eq, Show)

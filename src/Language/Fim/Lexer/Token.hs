@@ -69,6 +69,8 @@ data Token = ClassStart
            | MultiplyPrefix
            | DivideInfix
            | DividePrefix
+           | Increment
+           | Decrement
            -- Comparison
            | Nt
            | Not

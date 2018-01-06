@@ -38,14 +38,15 @@ stack test
 * User Input
 * Calling Methods
 * Comments
+* Increment/Decrement
 
 ### What doesn't work
 
 * Arrays
 * Switches
-* Increment/Decrement
+* String concatenation
 
-### What I'm not gonna bother with
-* Interfaces (what does this even mean in a language without objects?)
-* Inheritence (Not much point without libraries)
-* More than one class (no syntax for calling other classes or creating objects)
+### What I'm not going bother with
+* *Interfaces* (what does this even mean in a language without objects?)
+* *Inheritence* (Not much point without libraries)
+* *More than one class* (no syntax for calling other classes or creating objects)

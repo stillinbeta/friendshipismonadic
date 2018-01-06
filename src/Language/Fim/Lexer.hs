@@ -174,13 +174,16 @@ lexToken' = choice
             , R_plus
             ] $> Token.AddInfix
   , rstring R_add $> Token.AddPrefix
-  -- minus
+  , rstring R_got_one_more $> Token.Increment
+  -- subtract
   , rchoice [ R_minus
             , R_without
             ] $> Token.SubtractInfix
   , rchoice [ R_subtract
             , R_the_difference_between
             ] $> Token.SubtractPrefix
+  , rstring R_got_one_less $> Token.Decrement
+
   --multiply
   , rchoice [ R_times
             , R_multiplied_with

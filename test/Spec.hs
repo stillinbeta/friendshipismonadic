@@ -151,6 +151,18 @@ main = hspec $ do
       it "should support division" $ do
         let program = wrapMethod [text|I said divide 81 by 9!|]
         Fim.run program "" `shouldOutput` "9\n"
+      it "should support increments" $ do
+        let program = wrapMethod [text|Did you know that Spike's Allowance is the number 17?
+                                       Spike's Allowance got one more!
+                                       I said Spike's Allowance.
+                                      |]
+        Fim.run program "" `shouldOutput` "18\n"
+      it "should support decrements" $ do
+        let program = wrapMethod [text|Did you know that Rarity's mane length is the number 12?
+                                       Rarity's mane length got one less!
+                                       I said Rarity's mane length.
+                                      |]
+        Fim.run program "" `shouldOutput` "11\n"
     describe "comparisons" $ do
       it "should support equal to" $ do
         let program = wrapMethod [text|I sang "Applejack" is "Bad"!|]

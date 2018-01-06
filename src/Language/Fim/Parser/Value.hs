@@ -126,4 +126,4 @@ methodCall (Types.VVariable (Types.Variable idt)) = do
   return Types.VMethodCall { Types.vMethodName = idt
                            , Types.vMethodArgs = args
                            }
-methodCall _ = fail "wrong argument type"
+methodCall x = fail "wrong argument type"

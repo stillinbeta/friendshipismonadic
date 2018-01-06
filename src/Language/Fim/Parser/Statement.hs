@@ -24,13 +24,14 @@ statements = many statement
 statement :: Parser Types.Statement
 statement = choice [ io
                    , declaration
-                   , assignment
+                   , try assignment -- incrDecr also starts with a variable
                    , ifThenElse
                    , while
                    , doWhile
                    , for
                    , call
                    , return_
+                   , incrDecr
                    ] <?> "statement"
 
 -- output --
@@ -217,3 +218,14 @@ return_ = do
   val <- value
   terminator
   return Types.Return { Types.returnVal = val }
+
+-- increment / decrement
+
+incrDecr :: Parser Types.Statement
+incrDecr = do
+  var <- variable
+  constructor <- choice [ token_ Token.Increment $> Types.Increment
+                        , token_ Token.Decrement $> Types.Decrement
+                        ]
+  terminator
+  return $ constructor var

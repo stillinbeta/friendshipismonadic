@@ -112,6 +112,7 @@ genStatements = Gen.list (Range.linear 0 20) genStatement
 genStatement :: Gen (WithText Statement)
 genStatement = Gen.recursive
   Gen.choice
+  -- non recursive
   [ genOutput
   , genInput
   , genPrompt
@@ -119,7 +120,9 @@ genStatement = Gen.recursive
   , genAssignment
   , genCall
   , genReturn
+  , genIncrDecr
   ]
+  -- recursive
   [ genIfThenElse
   , genWhile
   , genDoWhile
@@ -177,6 +180,17 @@ genDeclaration = do
                p val, "?"
                ]
     )
+
+genIncrDecr :: Gen (WithText Statement)
+genIncrDecr = do
+  var <- genVariable
+  p0 <- genPunctuation
+  s0 <- genSpace
+  (opr, str) <- Gen.element [(Increment, "more")
+                            ,(Decrement, "less")
+                            ]
+  let text = T.concat [ p var, " got one ", str, p0, s0]
+  return $ WithText (opr $ s var) text
 
 genAssignment :: Gen (WithText Statement)
 genAssignment = do
@@ -433,13 +447,13 @@ genInfixOpr =
               , (LessThanOrEqual,      do cmp    <- genComparator
                                           negation <- genNegationWithNo
                                           more   <- genMore
-                                          return $ T.concat [cmp, negation, more, "than"])
+                                          return $ T.concat [cmp, negation, more, " than"])
               , (GreaterThan,          do cmp <- genComparator
                                           more <- genMore
-                                          return $ T.concat [cmp, more, "than"])
+                                          return $ T.concat [cmp, more, " than"])
               , (GreaterThanOrEqual,   do cmp <- genComparator
                                           negation <- genNegationWithNo
-                                          return $ T.concat [cmp, negation, "less than"])
+                                          return $ T.concat [cmp, negation, " less than"])
               , (And, pure "and")
               , (Or,  pure "or")
               ]

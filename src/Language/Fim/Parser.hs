@@ -12,7 +12,7 @@ import Debug.Trace
 parse :: T.Text -> Either String Class
 parse t = either (Left . show) Right $ do
   tokens <- lexTokens t
-  Parsec.parse fimClass "parser" $! tokens -- traceShowId tokens
+  Parsec.parse fimClass "parser" $! tokens
 
 traceShowWith :: (Show b) => (a -> b) -> a -> a
 traceShowWith f a = traceShow (f a) a

@@ -80,6 +80,10 @@ evalStatement c@Call{} =
   Nothing <$ evalValue (callVal c)
 evalStatement r@Return{} =
   Just <$> evalValue (returnVal r)
+evalStatement d@Decrement{} =
+  evalStatement $ makeIncrDecr (decVar d) Subtract
+evalStatement i@Increment{} =
+  evalStatement $ makeIncrDecr (incrVar i) Add
 evalStatement a@Assignment{} = do
   let aVar =  assignmentName a
   let aVarName = vName aVar
@@ -277,3 +281,14 @@ w1 <||> w2 = do
   case m1 of
     Just{} -> pure m1
     Nothing -> w2
+
+makeIncrDecr :: Variable -> BinaryOperator -> Statement
+makeIncrDecr var op =
+  Assignment { assignmentName = var
+             , assignmentExpr =
+               VBinaryOperation { vBinArg1 = VVariable var
+                                , vBinOpr = op
+                                , vBinArg2 = VLiteral (NumberLiteral 1)
+                                }
+
+             }
