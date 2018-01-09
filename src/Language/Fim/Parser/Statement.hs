@@ -106,9 +106,9 @@ declarationTyped = do
 
 declarationVariable :: Parser (Maybe Types.Type, Maybe Types.Value)
 declarationVariable = do
-  val <- Types.VVariable <$> variable
+  var <-  variable
   -- Try to turn it into a method call if possible
-  val' <- methodCall val <|> pure val
+  val' <- methodCall var <|> pure (Types.VVariable var)
   return (Nothing, Just val')
 
 declarationType :: Parser Types.Type

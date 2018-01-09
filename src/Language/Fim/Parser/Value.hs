@@ -5,34 +5,40 @@ module Language.Fim.Parser.Value (value
 import qualified Language.Fim.Types as Types
 import qualified Language.Fim.Lexer.Token as Token
 import Language.Fim.Parser.Util (Parser, token, token_)
-import Language.Fim.Parser.Literal (literal)
+import Language.Fim.Parser.Literal (literal, stringLiteral, charLiteral)
 
 import Data.Functor (($>))
-import Text.Parsec.Combinator (choice, sepBy1)
+import Text.Parsec.Combinator (choice, sepBy1, optionMaybe)
 import Text.Parsec ((<?>), (<|>), try)
 
 value :: Parser Types.Value
-value = choice [ shallowPrefix
+value = choice [ shallowPrefix False
                , unaryOperator
                , binaryOperatorPrefix
                ]
 
-greedyValue :: Parser Types.Value
-greedyValue = choice [ try $ shallowValue >>= methodCall
-                     , shallowValue
+lazyValue :: Parser Types.Value
+lazyValue = choice [ shallowPrefix True
                      , unaryOperator
                      , binaryOperatorPrefix
-                     , shallowValue >>= binaryOperatorInfix
                      ]
 
 -- All the types that begin with a naked value
-shallowPrefix :: Parser Types.Value
-shallowPrefix = do
+shallowPrefix :: Bool -> Parser Types.Value
+shallowPrefix lazy = do
   val <- shallowValue
-  choice [ methodCall val
-         , binaryOperatorInfix val
-         , pure val
-         ]
+  specialised val <|> general val
+  where specialised val = case val of
+          (Types.VVariable var) ->  methodCall var
+          -- stringConcat can overlap with `pure val`
+          (Types.VLiteral lit) -> try $ stringConcat lit
+          _ -> fail "no specialesd parser"
+        general val = if lazy
+                      -- try to get the shallow value first.
+                      -- This prevents the `and` in argument lists or binary operators
+                      -- from matching the `and` that's a synonym for plus.
+                      then choice [ pure val, binaryOperatorInfix val]
+                      else choice [ binaryOperatorInfix val, pure val]
 
 unaryOperator :: Parser Types.Value
 unaryOperator = do
@@ -70,7 +76,7 @@ binaryOperatorInfix expr1 = do
 binaryOperatorPrefix :: Parser Types.Value
 binaryOperatorPrefix = do
   (opr, infx) <- prefixOperator
-  expr1 <- greedyValue
+  expr1 <- lazyValue
   infx
   expr2 <- value
   return Types.VBinaryOperation { Types.vBinArg1 = expr1
@@ -119,11 +125,28 @@ comparisonOperators = do
         moreThan = token_ Token.More >> token_ Token.Than
         lessThan = token_ Token.Less >> token_ Token.Than
 
-methodCall :: Types.Value -> Parser Types.Value
-methodCall (Types.VVariable (Types.Variable idt)) = do
+methodCall :: Types.Variable -> Parser Types.Value
+methodCall (Types.Variable idt) = do
   token_ Token.MethodArgs
-  args <- sepBy1 greedyValue $ token_ Token.And
+  args <- sepBy1 lazyValue $ token_ Token.And
   return Types.VMethodCall { Types.vMethodName = idt
                            , Types.vMethodArgs = args
                            }
-methodCall x = fail "wrong argument type"
+
+stringConcat :: Types.Literal -> Parser Types.Value
+stringConcat lit
+  -- Force at least one level of recursion, to avoid matching plan string
+  -- literal.
+  | isStrCharLit = Types.VConcat <$> (Types.CValue lit <$> value <*> stringConcat')
+  | otherwise = fail "expected string or character literal"
+  where
+    isStrCharLit = case lit of
+                     Types.StringLiteral{} -> True
+                     Types.CharacterLiteral{} -> True
+                     _ -> False
+    stringConcat' = do
+      lit' <- choice [stringLiteral, charLiteral]
+      conc <- optionMaybe $ (,) <$> value <*> stringConcat'
+      return $ case conc of
+        Nothing -> Types.CLeaf lit'
+        Just (val, subVal) -> Types.CValue lit' val subVal

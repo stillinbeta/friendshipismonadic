@@ -66,8 +66,8 @@ main = hspec $ do
         Fim.run program "" `shouldOutput` "Hello, Equestria!\n"
       it "should accept number input" $ do
         let program = wrapMethod [text|I asked Spike's age.
-                                           I said Spike's age plus 1!
-                                           |]
+                                      I said Spike's age plus 1!
+                                      |]
         Fim.run program "12" `shouldOutput` "13\n"
       it "should accept boolean input" $ do
         let program = wrapMethod [text|I heard Something.

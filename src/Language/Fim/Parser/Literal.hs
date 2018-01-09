@@ -1,4 +1,7 @@
-module Language.Fim.Parser.Literal (literal) where
+module Language.Fim.Parser.Literal (literal
+                                   , stringLiteral
+                                   , charLiteral
+                                   ) where
 
 import qualified Language.Fim.Types as Types
 import qualified Language.Fim.Lexer.Token as Token

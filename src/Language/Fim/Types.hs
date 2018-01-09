@@ -10,6 +10,7 @@ module Language.Fim.Types ( Class(..)
                           , Identifier
                           , Variable(..)
                           , Type(..)
+                          , Concat(..)
                           ) where
 
 import Data.Text as T
@@ -90,6 +91,7 @@ data Value = VLiteral { vLiteral :: Literal}
            | VUnaryOperation { vUnArg :: Value
                             , vUnOpr :: UnaryOperator
                             }
+           | VConcat {vConcat :: Concat}
            deriving (Eq, Show)
 
 data BinaryOperator = And -- And can be "Add" or "&&"
@@ -106,6 +108,8 @@ data UnaryOperator = Not
 
 newtype Variable = Variable { vName :: Identifier
                             } deriving (Eq, Show)
+
+data Concat = CLeaf Literal | CValue Literal Value Concat deriving (Eq, Show)
 
 data Literal = StringLiteral    { slValue :: T.Text }
              | NumberLiteral    { nlValue :: Double } -- TODO: Supposed to be Float64

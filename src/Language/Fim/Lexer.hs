@@ -5,7 +5,7 @@ module Language.Fim.Lexer ( lexTokens
 
 import qualified Language.Fim.Lexer.Token as Token
 import Language.Fim.Lexer.Reserved ( ReservedWords(..), toString
-                                   , reservedWordList)
+                                   , reservedWordList, punctuationChars)
 
 import Control.Monad (void, when)
 import Data.Functor (($>))
@@ -54,7 +54,7 @@ astring str = try $ do
   strMatch <- string str
   -- don't match substrings, just the end of a token.
   lookAhead $ choice [ void  space
-                     , void (oneOf "?!.:,‽…")
+                     , void (oneOf punctuationChars)
                      , void (try $ string "n't") -- special case: tokens can match a n't
                      ]
   return strMatch
@@ -282,7 +282,7 @@ endOfVariable :: Parser ()
 endOfVariable = lookAhead $ punctuation <|> reservedWord
   where
     -- terminals do not start with spaces
-    punctuation = void $ oneOf ".!?‽…:"
+    punctuation = void $ oneOf punctuationChars
     reservedWord = void . choice . map matchWord $ reservedWordList
     -- reserved words are preceded with a space
     matchWord = try . (space >>) . string

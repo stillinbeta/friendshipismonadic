@@ -380,9 +380,7 @@ genReturn = do
 -- Value --
 -----------
 genValue :: Gen (WithText Value)
-genValue = Gen.choice [ genShallowValue
-                      , genExpr
-                      ]
+genValue = genExpr
 
 genShallowValue :: Gen (WithText Value)
 genShallowValue  = Gen.choice [ wtLift VLiteral  <$> genLiteral
@@ -390,13 +388,17 @@ genShallowValue  = Gen.choice [ wtLift VLiteral  <$> genLiteral
                               ]
 
 genExpr :: Gen (WithText Value)
-genExpr = Gen.recursive
+genExpr = genValueWithFilter (const True)
+
+genValueWithFilter :: (Value -> Bool) -> Gen (WithText Value)
+genValueWithFilter f = Gen.filter (f . s) $ Gen.recursive
   Gen.choice
   [ genShallowValue ]
   -- Parser is left-greedy, so make left value shallow
-  [ Gen.subtermM2 genShallowValue genExpr makeBinaryOperator
-  , Gen.subtermM  genExpr genUnaryOperator
+  [ Gen.subtermM2 genShallowValue (genValueWithFilter f) makeBinaryOperator
+  , Gen.subtermM  (genValueWithFilter f) genUnaryOperator
   , genMethodCall
+  , genConcat
   ]
 
 makeBinaryOperator :: WithText Value -> WithText Value -> Gen (WithText Value)
@@ -509,6 +511,39 @@ genMethodCall = do
   return $ WithText VMethodCall { vMethodName = s idt
                                 , vMethodArgs = s <$> args
                                 } text
+
+
+
+genConcat :: Gen (WithText Value)
+genConcat = wtLift VConcat <$> Gen.filter notLeaf genConcat'
+  -- Singleton leafs are valid technically, but they're isomorphic to string literals.
+  -- The parser always interperts them as the latter, so don't use them here.
+  where notLeaf c = case s c of
+                      CLeaf{} -> False
+                      CValue{} -> True
+
+genConcat' :: Gen (WithText Concat)
+genConcat' = Gen.recursive
+            Gen.choice
+            [ wtLift CLeaf <$> genConcatLiteral]
+            [ genCValue ]
+  where genCValue = do
+          lit <- genConcatLiteral
+          val <- genValueWithFilter notCatFilter
+          -- if we allow sub-concats, we can't assume the parser will parse them
+          -- in the correct order
+          recurs <- genConcat'
+          let typ = CValue (s lit) (s val) (s recurs)
+          let text = T.concat [p lit, p val, p recurs]
+          return $ WithText typ text
+        genConcatLiteral = Gen.choice [ genStringLiteral
+                                      , genConcatLiteral
+                                      ]
+        notCatFilter f = case f of
+                           VConcat{} -> False
+                           _ -> True
+
+
 
 --------------
 -- Literals --
