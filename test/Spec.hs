@@ -418,6 +418,27 @@ main = hspec $ do
                       |]
           Fim.run program "" `shouldError`
             "Method something neat has return type string but tried to return number"
+    describe "string concat" $ do
+      it "should combine literals" $ do
+        let program = wrapMethod [text|I said "Spike is "12" years old"!|]
+        Fim.run program "" `shouldOutput` "Spike is 12 years old\n"
+      it "should combine variables" $ do
+        let program = wrapMethod [text|Did you know that Applejack's apple count is the number 17?
+                                       I said "Applejack has "Applejack's apple count" apples"!
+                                      |]
+        Fim.run program "" `shouldOutput` "Applejack has 17 apples\n"
+      it "should support chaining messages" $ do
+        let program = wrapMethod [text|I said "Pinkie Pie made "17" cupcakes and "25" muffins"!
+                                      |]
+        Fim.run program "" `shouldOutput` "Pinkie Pie made 17 cupcakes and 25 muffins\n"
+      it "should concat with characters" $ do
+        let program = wrapMethod [text|I said 'a'2'z'!
+                                      |]
+        Fim.run program "" `shouldOutput` "a2z\n"
+      it "should support complex expressions" $ do
+        let program = wrapMethod [text|I sang "My fact is " 17 is greater than 18'!'.
+                                      |]
+        Fim.run program "" `shouldOutput` "My fact is false!\n"
 
 shouldOutput :: Either T.Text T.Text -> T.Text -> Expectation
 shouldOutput got expected =

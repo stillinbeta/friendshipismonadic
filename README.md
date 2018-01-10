@@ -39,12 +39,12 @@ stack test
 * Calling Methods
 * Comments
 * Increment/Decrement
+* String concatenation
 
 ### What doesn't work
 
 * Arrays
 * Switches
-* String concatenation
 
 ### What I'm not going bother with
 * *Interfaces* (what does this even mean in a language without objects?)

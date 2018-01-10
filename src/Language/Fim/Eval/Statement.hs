@@ -18,6 +18,7 @@ import Control.Monad.State.Class (gets, modify)
 import qualified Data.Map as Map
 import Data.Maybe (fromMaybe)
 import Data.Ix (range)
+import qualified Data.Text as T
 
 evalMethod :: Evaluator m => Function -> [ValueBox] -> m ValueBox
 evalMethod f args = do
@@ -199,6 +200,7 @@ evalValue v = case v of
                  case Map.lookup name m of
                    Just f -> evalMethod f argBoxes
                    Nothing -> throwError $ Errors.noSuchMethod name
+               VConcat val -> StringBox <$> evalConcat val
 
 evalUnOp :: (Evaluator m) => ValueBox -> UnaryOperator -> m ValueBox
 evalUnOp v op = case op of
@@ -233,6 +235,21 @@ evalBinOp v1 v2 binOp =
     doComparison cmp = BooleanBox . cmp <$> compareBox v1 v2
     doBool opr = BooleanBox <$>
       (opr <$> boolOrError v1 <*> boolOrError v2)
+
+evalConcat :: (Evaluator m) => Concat -> m T.Text
+evalConcat con = case con of
+                 (CLeaf lit) -> return $ toText lit
+                 (CValue lit val c') -> do
+                   let t1 = toText lit
+                   t2 <- printableLiteral <$> evalValue val
+                   t3 <- evalConcat c'
+                   return $ T.concat [t1, t2, t3]
+  where toText lit = case lit of
+                       (CharacterLiteral c) -> T.singleton c
+                       (StringLiteral t) -> t
+                       _ -> error $ "got unexpected literal" ++ show lit
+
+
 
 numberOrError :: (Evaluator m) => ValueBox -> m Double
 numberOrError (NumberBox n) = pure n
