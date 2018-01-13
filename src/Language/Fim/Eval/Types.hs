@@ -32,7 +32,9 @@ data VariableBox = VariableBox { vboxValue      :: ValueBox
                                }
 
 data ValueBox = NumberBox Double
-              | ArrayBox [ValueBox]
+              | ArrayBox { arrType :: Type
+                         , arrVals :: [ValueBox]
+                         }
               | CharacterBox Char
               | StringBox T.Text
               | BooleanBox Bool
@@ -49,10 +51,9 @@ boxLiteral literal = case literal of
 
 typeForBox :: ValueBox -> Maybe Type
 typeForBox box = case box of
-  NumberBox{}    -> Just TNumber
-  StringBox{}    -> Just TString
-  CharacterBox{} -> Just TCharacter
-  BooleanBox{}   -> Just TBoolean
-  NullBox{}      -> Nothing
-  -- TODO
-  ArrayBox{}     -> undefined
+  NumberBox{}             -> Just TNumber
+  StringBox{}             -> Just TString
+  CharacterBox{}          -> Just TCharacter
+  BooleanBox{}            -> Just TBoolean
+  ArrayBox{arrType = typ} -> Just typ
+  NullBox{}               -> Nothing

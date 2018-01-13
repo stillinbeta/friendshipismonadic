@@ -10,7 +10,6 @@ import Language.Fim.Types
 import qualified Language.Fim.Eval.Errors as Errors
 import Language.Fim.Eval.Util (printableLiteral, boxInput, checkType, typeMatch)
 
-import Prelude hiding (putStrLn)
 import Control.Applicative ((<|>), empty)
 import Control.Monad (when, unless, void, foldM)
 import Control.Monad.Error.Class (throwError)
@@ -77,6 +76,20 @@ evalStatement d@Declaration{} = do
   box <- maybe (pure NullBox) evalValue (declareVal d)
   declareVariable (declareName d) box (declareIsConstant d) (declareType d)
   noReturn
+evalStatement d@ArrayDeclaration{} = do
+  let typ' = TArray $ aDecType d
+  vals <- mapM getValue $ zip [1..] (aDecVals d)
+  let arr = ArrayBox { arrType = typ'
+                     , arrVals = vals
+                     }
+  declareVariable (aDecName d) arr False (Just typ')
+  noReturn
+  where
+    getValue (i, val) = do
+      box <- evalValue val
+      if typeMatch box (aDecType d)
+      then return box
+      else throwError $ Errors.arrayTypeError (aDecName d) (aDecType d) i box
 evalStatement c@Call{} =
   Nothing <$ evalValue (callVal c)
 evalStatement r@Return{} =

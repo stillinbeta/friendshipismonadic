@@ -13,6 +13,7 @@ module Language.Fim.Eval.Errors ( noMainMethod
                                 , methodIncorrectArgType
                                 , noSuchMethod
                                 , methodIncorrectReturn
+                                , arrayTypeError
                                 ) where
 
 import qualified Language.Fim.Types as Types
@@ -109,6 +110,18 @@ methodIncorrectReturn f vbox =
                         , boxTypeName vbox
                         ]
 
+arrayTypeError :: Types.Variable -> Types.Type -> Int -> ETypes.ValueBox -> T.Text
+arrayTypeError var typ i box =
+  T.concat [ showVariable var
+           , " is an array of "
+           , typeName typ
+           , "s, but element "
+           , T.pack . show $ i
+           , " is a "
+           , boxTypeName box
+           ]
+
+
 -- utilities
 
 showVariable :: Types.Variable -> T.Text
@@ -123,3 +136,4 @@ typeName typ = case typ of
   Types.TString    -> "string"
   Types.TCharacter -> "character"
   Types.TBoolean   -> "argument"
+  Types.TArray typ' -> T.concat ["array of type ", typeName typ', "s"]

@@ -35,7 +35,7 @@ data Argument = Argument { argName :: Identifier
                          , argType :: Type
                          } deriving (Eq, Show)
 
-data Type = TNumber | TString | TCharacter | TBoolean deriving (Eq, Show)
+data Type = TNumber | TString | TCharacter | TBoolean | TArray Type deriving (Eq, Show)
 
 data Statement = Output { outputValue :: Value
                         }

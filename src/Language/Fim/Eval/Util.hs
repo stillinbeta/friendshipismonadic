@@ -21,6 +21,7 @@ typeMatch box typ = case (box, typ) of
     (StringBox{},    TString)    -> True
     (CharacterBox{}, TCharacter) -> True
     (BooleanBox{},   TBoolean)   -> True
+    (ArrayBox{arrType = TArray typ1}, TArray typ2) -> typ1 == typ2
     _ -> False
 
 checkType :: (Evaluator m) => ValueBox -> Maybe Type -> Identifier -> m ()
@@ -39,12 +40,24 @@ printableLiteral literal =
     CharacterBox c -> T.singleton c
     BooleanBox b   -> if b then "true" else "false"
     NullBox        -> "nothing"
-    ArrayBox _     -> undefined
+    ArrayBox{arrVals = vs}     -> printArray vs
   where -- Output integral-ish numbers without trailing zeros
     showNumber n = let n' = round n :: Int in
       if abs (n - fromIntegral n') < 0.00000001
       then show n'
       else show n
+
+    -- val
+    printArray [v1] = printableLiteral v1
+    -- val and val
+    printArray [v1, v2] = T.concat [printableLiteral v1, " and ", printableLiteral v2]
+    -- val, val, and val
+    printArray xs = oxfordComma xs
+
+    oxfordComma [] = ""
+    oxfordComma [v1] = "and " `T.append` printableLiteral v1
+    oxfordComma (v:vs) = T.concat [printableLiteral v, ", ", oxfordComma vs]
+
 
 boxInput :: T.Text -> ValueBox
 boxInput t

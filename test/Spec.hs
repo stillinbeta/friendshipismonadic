@@ -8,13 +8,12 @@ import Language.Fim.Types
 import qualified Data.Text as T
 import NeatInterpolation (text)
 import Test.Hspec
-import System.IO (stderr)
 
 main :: IO ()
 main = hspec $ do
   describe "parser" $ do
     -- basic checks to make sure the parser is behaving. Most complex error will
-    -- be caught by SpecHedgehog.hs
+    -- be caught by TestHedgehog.hs
     it "should lex a simple, empty class" $ do
       let program = [text|Dear Princess Celestia: Hello World!
                           Your faithful student, Twilight Sparkle.|]
@@ -289,12 +288,12 @@ main = hspec $ do
         Fim.run program "" `shouldError`
           "Can only iterate over numbers and characters, instead got argument and argument"
         let program2 =
-                wrapMethod [text|For every string Name from "Applejack" to "Twilight":
-                                      I said Name.
-                                      That's what I did.
-                                    |]
-        Fim.run program "" `shouldError`
-          "Can only iterate over numbers and characters, instead got argument and argument"
+                wrapMethod [text|For every name Name from "Applejack" to "Twilight":
+                                I said Name.
+                                That's what I did.
+                                |]
+        Fim.run program2 "" `shouldError`
+          "Can only iterate over numbers and characters, instead got string and string"
     describe "calling methods" $ do
       it "should evaluate other methods" $ do
         let program = wrapClass [text|Today I learned something cool.
@@ -439,6 +438,37 @@ main = hspec $ do
         let program = wrapMethod [text|I sang "My fact is " 17 is greater than 18'!'.
                                       |]
         Fim.run program "" `shouldOutput` "My fact is false!\n"
+    describe "arrays" $ do
+      it "should support definitions inline" $ do
+        let program = wrapMethod [text|Did you know that Twilight's book collection is the names
+                                      "Starswirl's Journal"
+                                      and "The Elements of Harmony"
+                                      and "Practical Magic"?
+                                      I sang Twilight's book collection!
+                                      |]
+        Fim.run program "" `shouldOutput`
+          "Starswirl's Journal, The Elements of Harmony, and Practical Magic\n"
+      it "should support definitions by statement" $ do
+        let program = wrapMethod [text|Did you know that Applejack's parents had many names?
+                                       Applejack's parents 1 is "Pear Butter".
+                                       Applejack's parents 2 is "Bright Mac".
+                                       I said Applejack's parents!
+                                      |]
+        Fim.run program "" `shouldOutput` "Pear Butter and Bright Mac\n"
+      it "should print singleton arrays as just elements" $ do
+        let program = wrapMethod [text|Did you know that Scootaloo's sister has
+                                      the names "Rainbow Dash"?
+                                      I said Scootaloo's sister.
+                                      |]
+        Fim.run program "" `shouldOutput` "Rainbow Dash\n"
+      it "should error on mismatched types" $ do
+        let program = wrapMethod [text|Did you know that Sugercube Corner's Prices is the numbers 17 and "free"?
+                                      |]
+        Fim.run program "" `shouldError`
+          "<Sugercube Corner's Prices> is an array of numbers, but element 2 is a string"
+
+
+
 
 shouldOutput :: Either T.Text T.Text -> T.Text -> Expectation
 shouldOutput got expected =
