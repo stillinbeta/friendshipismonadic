@@ -87,7 +87,7 @@ declaration = do
   token_ Token.VariableDec
   var <- variable
   variableVerb
-  try (declarationScalar var) <|> declarationArray var
+  try (declarationArray var) <|> declarationScalar var
 
 declarationScalar :: Types.Variable -> Parser Types.Statement
 declarationScalar var = do
@@ -118,11 +118,15 @@ declarationVariable = do
 declarationType :: Parser Types.Type
 declarationType = do
   optional $ token_ Token.Article
-  choice [ token_ Token.NumberType    $> Types.TNumber
-         , token_ Token.CharacterType $> Types.TCharacter
-         , token_ Token.StringType    $> Types.TString
-         , token_ Token.BooleanType   $> Types.TBoolean
-         ]
+  typ <- choice [ token_ Token.NumberType    $> Types.TNumber
+                , token_ Token.CharacterType $> Types.TCharacter
+                , token_ Token.StringType    $> Types.TString
+                , token_ Token.BooleanType   $> Types.TBoolean
+                ]
+  isPlural <- isJust <$> optionMaybe (token_ Token.Plural)
+  return $ if isPlural
+           then Types.TArray typ
+           else typ
 
 declarationArray :: Types.Variable -> Parser Types.Statement
 declarationArray var = arrayList <|> arrayNumbered
@@ -130,7 +134,7 @@ declarationArray var = arrayList <|> arrayNumbered
     arrayNumbered = do
       token_ Token.Many
       typ <- declarationType
-      token_ Token.Plural
+      assertArrayType typ
       terminator
       vals <- arrayNumberedItem 1
       return Types.ArrayDeclaration { Types.aDecName = var
@@ -150,13 +154,18 @@ declarationArray var = arrayList <|> arrayNumbered
       return $ val:fromMaybe [] next
     arrayList = do
       typ <- declarationType
-      token_ Token.Plural
+      assertArrayType typ
       vals <- sepBy1 (lazyValue $ token_ Token.And) (token_ Token.And)
       terminator
       return Types.ArrayDeclaration { Types.aDecName = var
                                     , Types.aDecType = typ
                                     , Types.aDecVals = vals
                                     }
+    assertArrayType typ =
+      case typ of
+        Types.TArray {} -> pure ()
+        _ -> fail "Expected array type"
+
 
 -- Assignment --
 

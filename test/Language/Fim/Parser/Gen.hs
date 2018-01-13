@@ -214,8 +214,8 @@ genAssignment = do
                }
     (T.concat [ p var, " ", statement, " ", p val, p0])
 
-genType :: Gen (WithText Type)
-genType = do
+genScalarType :: Gen (WithText Type)
+genScalarType = do
   article <- Gen.element ["", "the ", "a "]
   (gen, typ) <- Gen.choice [ pure (genNumberNoun, TNumber)
                            , pure (genStringNoun, TString)
@@ -225,7 +225,13 @@ genType = do
   noun <- gen
   return $ WithText typ (T.concat [article, noun])
 
-
+genType :: Gen (WithText Type)
+genType = do
+  typ <- genScalarType
+  plural <- Gen.element ["s", "es"]
+  Gen.element [ typ
+              , WithText (TArray $ s typ) (p typ `T.append` plural)
+              ]
 genDeclarationNothingTyped :: Gen (WithText (Maybe Value), Maybe Type)
 genDeclarationNothingTyped = do
   typ <- genType
@@ -265,11 +271,11 @@ genArrayDeclarationList = do
   var <- genVariable
   verb <- genDeclarationVerb
   vals <- Gen.list (Range.linear 1 10) genShallowValue
-  typ <- genType
+  typ <- genScalarType
   let text = T.concat ["Did you know that", s0, p var, s1, verb, s2, p typ, plural, s3
                       , T.intercalate " and " (p <$> vals),  p0]
   let dec = ArrayDeclaration { aDecName = s var
-                             , aDecType = s typ
+                             , aDecType = TArray $ s typ
                              , aDecVals = s <$> vals
                              }
   return $ WithText dec text
@@ -285,13 +291,13 @@ genArrayDeclarationNumbered = do
   var <- genVariable
   verb <- genDeclarationVerb
   vals <- Gen.list (Range.linear 1 10) genValue
-  typ <- genType
+  typ <- genScalarType
   decs <- genDec var 1 vals
   let text = T.concat ["Did you know that", s0, p var, s1,
                        verb, s2, "many", s3, p typ, plural, "?",
                        s4, decs]
   let dec = ArrayDeclaration { aDecName = s var
-                             , aDecType = s typ
+                             , aDecType = TArray $ s typ
                              , aDecVals = s <$> vals
                              }
   return $ WithText dec text

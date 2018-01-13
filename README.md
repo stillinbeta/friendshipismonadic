@@ -40,10 +40,11 @@ stack test
 * Comments
 * Increment/Decrement
 * String concatenation
+* Creating arrays
 
 ### What doesn't work
 
-* Arrays
+* Reading and writing individual array elements
 * Switches
 
 ### What I'm not going bother with

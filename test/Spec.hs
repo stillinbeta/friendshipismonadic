@@ -417,6 +417,29 @@ main = hspec $ do
                       |]
           Fim.run program "" `shouldError`
             "Method something neat has return type string but tried to return number"
+        it "should return arrays" $ do
+          let program = wrapClass
+                [text|Today I learned something cool.
+                      I said something neat.
+                      That's all about something cool!
+
+                      I learned something neat with names:
+                      Did you know that Twilight's Friends is many names?
+                      Twilight's Friends 1 is "Pinkie Pie".
+                      Twilight's Friends 2 is "Fluttershy".
+                      Twilight's Friends 3 is "Applejack".
+                      Twilight's Friends 4 is "Rarity".
+                      Twilight's Friends 5 is "Rainbow Dash".
+                      Then you get Twilight's Friends!
+                      That's all about something neat!
+                     |]
+          Fim.run program "" `shouldOutput`
+            T.concat [ "Pinkie Pie, "
+                     , "Fluttershy, "
+                     , "Applejack, "
+                     , "Rarity, "
+                     , "and Rainbow Dash\n"
+                     ]
     describe "string concat" $ do
       it "should combine literals" $ do
         let program = wrapMethod [text|I said "Spike is "12" years old"!|]

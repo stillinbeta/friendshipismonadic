@@ -77,7 +77,7 @@ evalStatement d@Declaration{} = do
   declareVariable (declareName d) box (declareIsConstant d) (declareType d)
   noReturn
 evalStatement d@ArrayDeclaration{} = do
-  let typ' = TArray $ aDecType d
+  let typ' = aDecType d
   vals <- mapM getValue $ zip [1..] (aDecVals d)
   let arr = ArrayBox { arrType = typ'
                      , arrVals = vals
@@ -86,10 +86,11 @@ evalStatement d@ArrayDeclaration{} = do
   noReturn
   where
     getValue (i, val) = do
+      let TArray innerTyp = aDecType d
       box <- evalValue val
-      if typeMatch box (aDecType d)
+      if typeMatch box innerTyp
       then return box
-      else throwError $ Errors.arrayTypeError (aDecName d) (aDecType d) i box
+      else throwError $ Errors.arrayTypeError (aDecName d) innerTyp i box
 evalStatement c@Call{} =
   Nothing <$ evalValue (callVal c)
 evalStatement r@Return{} =
