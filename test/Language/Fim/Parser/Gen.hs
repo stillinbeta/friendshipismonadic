@@ -456,6 +456,7 @@ genValue = genExpr
 genShallowValue :: Gen (WithText Value)
 genShallowValue  = Gen.choice [ wtLift VLiteral  <$> genLiteral
                               , wtLift VVariable <$> genVariable
+                              , genArrayLookup
                               ]
 
 genExpr :: Gen (WithText Value)
@@ -471,6 +472,17 @@ genValueWithFilter f = Gen.filter (f . s) $ Gen.recursive
   , genMethodCall
   , genConcat
   ]
+
+genArrayLookup :: Gen (WithText Value)
+genArrayLookup = do
+  var <- genVariable
+  int <- Gen.integral (Range.linear 0 100)
+  s0 <- genSpace
+  let text = T.concat [p var, s0, T.pack . show $ int]
+  let aLookup = VArrayLookup { vaVariable = s var
+                            , vaIndex    = int
+                            }
+  return $ WithText aLookup text
 
 makeBinaryOperator :: WithText Value -> WithText Value -> Gen (WithText Value)
 makeBinaryOperator e1 e2 =

@@ -85,6 +85,9 @@ data Statement = Output { outputValue :: Value
 
 data Value = VLiteral { vLiteral :: Literal}
            | VVariable { vVariable :: Variable}
+           | VArrayLookup { vaVariable :: Variable
+                          , vaIndex    :: Int
+                          }
            | VMethodCall { vMethodName :: Identifier
                          , vMethodArgs :: [Value]
                          }

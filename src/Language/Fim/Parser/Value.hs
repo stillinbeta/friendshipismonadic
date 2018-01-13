@@ -27,7 +27,7 @@ shallowPrefix end = do
   val <- shallowValue
   specialised val <|> general val
   where specialised val = case val of
-          (Types.VVariable var) ->  methodCall var
+          (Types.VVariable var) -> methodCall var
           -- stringConcat can overlap with `pure val`
           (Types.VLiteral lit) -> try $ stringConcat lit
           _ -> fail "no specialesd parser"
@@ -58,8 +58,14 @@ variable = Types.Variable <$> identifier
 
 shallowValue :: Parser Types.Value
 shallowValue =  choice [ Types.VLiteral  <$> literal  <?> "literal"
-                       , Types.VVariable <$> variable <?> "variable"
+                       , varWithIndex <?> "variable"
                        ]
+  where varWithIndex = do
+          var <- variable
+          maybeIndex <- optionMaybe (token Token.tNumberLiteral)
+          return $ case maybeIndex of
+            (Just (Token.NumberLiteral n)) -> Types.VArrayLookup var (round n)
+            _ -> Types.VVariable var
 
 binaryOperatorInfix :: Parser () -> Types.Value -> Parser Types.Value
 binaryOperatorInfix end expr1 = do

@@ -491,8 +491,6 @@ main = hspec $ do
           "<Sugercube Corner's Prices> is an array of numbers, but element 2 is a string"
 
 
-
-
 shouldOutput :: Either T.Text T.Text -> T.Text -> Expectation
 shouldOutput got expected =
   got `shouldBe` Right expected
