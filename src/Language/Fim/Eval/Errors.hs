@@ -14,6 +14,8 @@ module Language.Fim.Eval.Errors ( noMainMethod
                                 , noSuchMethod
                                 , methodIncorrectReturn
                                 , arrayTypeError
+                                , cantIndex
+                                , invalidIndex
                                 ) where
 
 import qualified Language.Fim.Types as Types
@@ -121,6 +123,21 @@ arrayTypeError var typ i box =
            , boxTypeName box
            ]
 
+invalidIndex :: Types.Variable -> Int -> T.Text
+invalidIndex var i =
+  T.intercalate " " [ "There is no element"
+                    , T.pack . show $ i
+                    , "of array"
+                    , showVariable var
+                    ]
+
+cantIndex :: Types.Variable -> ETypes.ValueBox -> T.Text
+cantIndex var box =
+  T.intercalate " " ["Cannot index"
+                    , showVariable var
+                    , "of type"
+                    , boxTypeName box
+                    ]
 
 -- utilities
 

@@ -489,7 +489,21 @@ main = hspec $ do
                                       |]
         Fim.run program "" `shouldError`
           "<Sugercube Corner's Prices> is an array of numbers, but element 2 is a string"
-
+      it "should lookup array by index" $ do
+        let program = wrapMethod [text|Did you know that The diarchs has the names "Celestia" and "Luna"?
+                                       I said The diarchs 1!
+                                      |]
+        Fim.run program "" `shouldOutput` "Celestia\n"
+      it "should throw an error when looking up an invalid index" $ do
+        let program = wrapMethod [text|Did you know that The diarchs has the names "Celestia" and "Luna"?
+                                       I said The diarchs 3!
+                                      |]
+        Fim.run program "" `shouldError` "There is no element 3 of array <The diarchs>"
+      it "should throw an error when indexing an invalid type" $ do
+        let program = wrapMethod [text|Did you know that Applejack's age is the number 17?
+                                       I said Applejack's age 2!
+                                      |]
+        Fim.run program "" `shouldError` "Cannot index <Applejack's age> of type number"
 
 shouldOutput :: Either T.Text T.Text -> T.Text -> Expectation
 shouldOutput got expected =

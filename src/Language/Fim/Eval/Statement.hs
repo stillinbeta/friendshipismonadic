@@ -194,6 +194,16 @@ evalValue :: (Evaluator m) => Value -> m ValueBox
 evalValue v = case v of
                VVariable { vVariable = var } -> lookupIdentifier var
                VLiteral { vLiteral = lit } -> return $ boxLiteral lit
+               VArrayLookup { vaVariable = varName
+                            , vaIndex = i
+                            } -> do
+                 var <- lookupIdentifier varName
+                 case var of
+                   ArrayBox { arrVals = arr} ->
+                     if length arr > (i - 1)
+                     then return $ arr !! (i - 1)
+                     else throwError $ Errors.invalidIndex varName i
+                   _ -> throwError $ Errors.cantIndex varName var
                VBinaryOperation { vBinArg1 = v1
                                 , vBinOpr  = opr
                                 , vBinArg2 = v2
