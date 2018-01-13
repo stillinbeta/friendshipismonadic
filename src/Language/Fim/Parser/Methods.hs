@@ -48,5 +48,5 @@ methodEnd :: T.Text -> Parser ()
 methodEnd idt = do
   token_ Token.MethodDecEnd
   end <- identifier
-  unless (idt == end) $ fail "expected method end"
+  unless (idt == end) $ fail ("expected end of method <" ++ T.unpack idt ++ ">")
   terminator

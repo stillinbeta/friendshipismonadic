@@ -50,6 +50,10 @@ data Statement = Output { outputValue :: Value
                              , declareIsConstant :: Bool
                              , declareType :: Maybe Type
                              }
+               | ArrayDeclaration { aDecName :: Variable
+                                  , aDecVals :: [Value]
+                                  , aDecType :: Type
+                                  }
                | Assignment { assignmentName :: Variable
                             , assignmentExpr :: Value
                             }

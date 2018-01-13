@@ -5,7 +5,7 @@ module Language.Fim.Parser.Statement ( statement
 
 import qualified Language.Fim.Types as Types
 -- import Language.Fim.Parser.Tokens (terminator)
-import Language.Fim.Parser.Value (value, variable, methodCall)
+import Language.Fim.Parser.Value (value, lazyValue, variable, methodCall)
 import Language.Fim.Parser.Util (Parser, token_, tokenChoice_)
 import Language.Fim.Parser.Tokens (terminator)
 import Language.Fim.Parser.Literal (literal)
@@ -15,7 +15,7 @@ import Control.Applicative (many)
 import Data.Functor (($>))
 import Data.Maybe (isJust, fromMaybe)
 import Text.Parsec ((<?>), (<|>), try)
-import Text.Parsec.Combinator (choice, optionMaybe, optional)
+import Text.Parsec.Combinator (choice, optionMaybe, optional, sepBy1)
 
 
 statements :: Parser [Types.Statement]
@@ -87,6 +87,10 @@ declaration = do
   token_ Token.VariableDec
   var <- variable
   variableVerb
+  try (declarationScalar var) <|> declarationArray var
+
+declarationScalar :: Types.Variable -> Parser Types.Statement
+declarationScalar var = do
   isConstant <- isJust <$> optionMaybe (token_ Token.VariableConstant)
   (typ, val) <-  choice [ declarationTyped
                         , declarationVariable
@@ -115,10 +119,44 @@ declarationType :: Parser Types.Type
 declarationType = do
   optional $ token_ Token.Article
   choice [ token_ Token.NumberType    $> Types.TNumber
-                         , token_ Token.CharacterType $> Types.TCharacter
-                         , token_ Token.StringType    $> Types.TString
-                         , token_ Token.BooleanType   $> Types.TBoolean
-                         ]
+         , token_ Token.CharacterType $> Types.TCharacter
+         , token_ Token.StringType    $> Types.TString
+         , token_ Token.BooleanType   $> Types.TBoolean
+         ]
+
+declarationArray :: Types.Variable -> Parser Types.Statement
+declarationArray var = arrayList <|> arrayNumbered
+  where
+    arrayNumbered = do
+      token_ Token.Many
+      typ <- declarationType
+      token_ Token.Plural
+      terminator
+      vals <- arrayNumberedItem 1
+      return Types.ArrayDeclaration { Types.aDecName = var
+                                    , Types.aDecType = typ
+                                    , Types.aDecVals = vals
+                                    }
+    arrayNumberedItem i = do
+      token_ $ Token.Identifier (Types.vName var)
+      -- TODO: the interpreter should probably handle making sure the sequence
+      -- is ascending but right now this information isn't retained into the
+      -- evaluation phase
+      token_ $ Token.NumberLiteral i
+      variableVerb
+      val <- value
+      terminator
+      next <- optionMaybe $ try (arrayNumberedItem (i+1))
+      return $ val:fromMaybe [] next
+    arrayList = do
+      typ <- declarationType
+      token_ Token.Plural
+      vals <- sepBy1 (lazyValue $ token_ Token.And) (token_ Token.And)
+      terminator
+      return Types.ArrayDeclaration { Types.aDecName = var
+                                    , Types.aDecType = typ
+                                    , Types.aDecVals = vals
+                                    }
 
 -- Assignment --
 

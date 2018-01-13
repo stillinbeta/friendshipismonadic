@@ -117,6 +117,7 @@ genStatement = Gen.recursive
   , genInput
   , genPrompt
   , genDeclaration
+  , genArrayDeclaration
   , genAssignment
   , genCall
   , genReturn
@@ -162,7 +163,7 @@ genPrompt = do
 
 genDeclaration :: Gen (WithText Statement)
 genDeclaration = do
-  verb <- Gen.element ["is", "was", "has", "had", "like","likes", "liked"]
+  verb <- genDeclarationVerb
   name <- genVariable
   isConstant <- Gen.bool
   (val, typ) <- Gen.choice [ genDeclarationNothingTyped
@@ -180,6 +181,9 @@ genDeclaration = do
                p val, "?"
                ]
     )
+
+genDeclarationVerb :: Gen T.Text
+genDeclarationVerb =  Gen.element ["is", "was", "has", "had", "like","likes", "liked"]
 
 genIncrDecr :: Gen (WithText Statement)
 genIncrDecr = do
@@ -246,6 +250,67 @@ genDeclarationVariable :: Gen (WithText (Maybe Value), Maybe Type)
 genDeclarationVariable = do
   var <- genVariable
   return (WithText (Just . VVariable $ s var) (p var), Nothing)
+
+genArrayDeclaration :: Gen (WithText Statement)
+genArrayDeclaration = Gen.choice [genArrayDeclarationNumbered, genArrayDeclarationList]
+
+genArrayDeclarationList :: Gen (WithText Statement)
+genArrayDeclarationList = do
+  plural <- genPlural
+  s0 <- genSpace
+  s1 <- genSpace
+  s2 <- genSpace
+  s3 <- genSpace
+  p0 <- genPunctuation
+  var <- genVariable
+  verb <- genDeclarationVerb
+  vals <- Gen.list (Range.linear 1 10) genShallowValue
+  typ <- genType
+  let text = T.concat ["Did you know that", s0, p var, s1, verb, s2, p typ, plural, s3
+                      , T.intercalate " and " (p <$> vals),  p0]
+  let dec = ArrayDeclaration { aDecName = s var
+                             , aDecType = s typ
+                             , aDecVals = s <$> vals
+                             }
+  return $ WithText dec text
+
+genArrayDeclarationNumbered :: Gen (WithText Statement)
+genArrayDeclarationNumbered = do
+  plural <- genPlural
+  s0 <- genSpace
+  s1 <- genSpace
+  s2 <- genSpace
+  s3 <- genSpace
+  s4 <- genSpace
+  var <- genVariable
+  verb <- genDeclarationVerb
+  vals <- Gen.list (Range.linear 1 10) genValue
+  typ <- genType
+  decs <- genDec var 1 vals
+  let text = T.concat ["Did you know that", s0, p var, s1,
+                       verb, s2, "many", s3, p typ, plural, "?",
+                       s4, decs]
+  let dec = ArrayDeclaration { aDecName = s var
+                             , aDecType = s typ
+                             , aDecVals = s <$> vals
+                             }
+  return $ WithText dec text
+  where
+    genDec _ _ [] = pure ""
+    genDec var i (val:vals) = do
+      p0 <- genPunctuation
+      s0 <- genSpace
+      s1 <- genSpace
+      s2 <- genSpace
+      s3 <- genSpace
+      verb <- genDeclarationVerb
+      rest <- genDec var (i+1) vals
+      return $ T.concat [ p var, s0, T.pack $ show i
+                        , s1, verb, s2, p val, p0, s3
+                        , rest]
+
+genPlural :: Gen T.Text
+genPlural =  Gen.element ["s", "es"]
 
 genNumberNoun :: Gen T.Text
 genNumberNoun = pure "number"
@@ -511,8 +576,6 @@ genMethodCall = do
   return $ WithText VMethodCall { vMethodName = s idt
                                 , vMethodArgs = s <$> args
                                 } text
-
-
 
 genConcat :: Gen (WithText Value)
 genConcat = wtLift VConcat <$> Gen.filter notLeaf genConcat'

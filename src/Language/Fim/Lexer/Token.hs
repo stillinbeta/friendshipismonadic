@@ -39,6 +39,8 @@ data Token = ClassStart
            | VariableDec
            | Article
            | VariableConstant
+           | Plural
+           | Many
            -- Types
            | NumberType
            | StringType

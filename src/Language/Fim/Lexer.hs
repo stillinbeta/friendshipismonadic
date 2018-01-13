@@ -53,11 +53,15 @@ astring :: String -> Parser String
 astring str = try $ do
   strMatch <- string str
   -- don't match substrings, just the end of a token.
-  lookAhead $ choice [ void  space
+  lookAhead $ choice [ void space
                      , void (oneOf punctuationChars)
-                     , void (try $ string "n't") -- special case: tokens can match a n't
+                     , void suffix
                      ]
   return strMatch
+  where suffix = choice [ try $ string "n't"
+                        , try $ string "es"
+                        , string "s"
+                        ]
 
 rstring :: ReservedWords -> Parser String
 rstring = astring . toString
@@ -141,6 +145,11 @@ lexToken' = choice
   , char '…' $> Token.Ellipsis
 
   , astring "Did you know that" $> Token.VariableDec
+  -- Only after types, so not reserved
+  , choice [ astring "s"
+           , astring "es"
+           ] $> Token.Plural
+  , astring "many" $> Token.Many
   , rstring R_is $> Token.Is
   , rstring R_are $> Token.Are
   , rchoice [ R_was
@@ -277,15 +286,21 @@ identifier1 = do
 identifier :: Parser T.Text
 identifier = T.pack <$> manyTill anyChar endOfVariable
 
--- Voids needed inline to bring types into alignment
 endOfVariable :: Parser ()
-endOfVariable = lookAhead $ punctuation <|> reservedWord
+endOfVariable = lookAhead $ choice [ punctuation
+                                   , reservedWord
+                                   , arrayIndex
+                                   ]
   where
+    -- Array indices are trailing digits
+    arrayIndex = try $ space' >> many1 digit >> endOfVariable
     -- terminals do not start with spaces
     punctuation = void $ oneOf punctuationChars
     reservedWord = void . choice . map matchWord $ reservedWordList
     -- reserved words are preceded with a space
-    matchWord = try . (space >>) . string
+    matchWord = try . (space' >>) . string
 
 pprint :: LexStream -> String
 pprint = unwords . map (show . snd)
+
+space' = many1 space

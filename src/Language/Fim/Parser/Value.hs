@@ -1,4 +1,5 @@
 module Language.Fim.Parser.Value (value
+                                 , lazyValue
                                  , variable
                                  , methodCall) where
 
@@ -8,24 +9,21 @@ import Language.Fim.Parser.Util (Parser, token, token_)
 import Language.Fim.Parser.Literal (literal, stringLiteral, charLiteral)
 
 import Data.Functor (($>))
-import Text.Parsec.Combinator (choice, sepBy1, optionMaybe)
+import Text.Parsec.Combinator (choice, sepBy1, optionMaybe, lookAhead)
 import Text.Parsec ((<?>), (<|>), try)
 
 value :: Parser Types.Value
-value = choice [ shallowPrefix False
-               , unaryOperator
-               , binaryOperatorPrefix
-               ]
+value = lazyValue (fail "identity")
 
-lazyValue :: Parser Types.Value
-lazyValue = choice [ shallowPrefix True
-                     , unaryOperator
-                     , binaryOperatorPrefix
-                     ]
+lazyValue :: Parser () -> Parser Types.Value
+lazyValue end = choice [ shallowPrefix end
+                       , unaryOperator end
+                       , binaryOperatorPrefix end
+                       ]
 
 -- All the types that begin with a naked value
-shallowPrefix :: Bool -> Parser Types.Value
-shallowPrefix lazy = do
+shallowPrefix :: Parser () -> Parser Types.Value
+shallowPrefix end = do
   val <- shallowValue
   specialised val <|> general val
   where specialised val = case val of
@@ -33,20 +31,19 @@ shallowPrefix lazy = do
           -- stringConcat can overlap with `pure val`
           (Types.VLiteral lit) -> try $ stringConcat lit
           _ -> fail "no specialesd parser"
-        general val = if lazy
-                      -- try to get the shallow value first.
-                      -- This prevents the `and` in argument lists or binary operators
-                      -- from matching the `and` that's a synonym for plus.
-                      then choice [ pure val, binaryOperatorInfix val]
-                      else choice [ binaryOperatorInfix val, pure val]
+        general val = choice [ lookAhead end >> pure val
+                             , binaryOperatorInfix end val
+                             , pure val
+                             ]
 
-unaryOperator :: Parser Types.Value
-unaryOperator = do
+-- Take in a parser, so recursive lazy stays lazy
+unaryOperator :: Parser () -> Parser Types.Value
+unaryOperator end = do
   opr <- choice [ choice [ token_ Token.Not
                          , token_ Token.NotTheCase
                          ] $> Types.Not
                 ]
-  val <- value
+  val <- lazyValue end
   return Types.VUnaryOperation { Types.vUnArg = val
                                , Types.vUnOpr = opr
                                }
@@ -64,25 +61,26 @@ shallowValue =  choice [ Types.VLiteral  <$> literal  <?> "literal"
                        , Types.VVariable <$> variable <?> "variable"
                        ]
 
-binaryOperatorInfix :: Types.Value -> Parser Types.Value
-binaryOperatorInfix expr1 = do
+binaryOperatorInfix :: Parser () -> Types.Value -> Parser Types.Value
+binaryOperatorInfix end expr1 = do
   opr <- infixOperator <?> "infix operator"
-  expr2 <- value
+  expr2 <- lazyValue end
   return Types.VBinaryOperation { Types.vBinArg1 = expr1
                                 , Types.vBinArg2 = expr2
                                 , Types.vBinOpr   = opr
                                 }
 
-binaryOperatorPrefix :: Parser Types.Value
-binaryOperatorPrefix = do
+binaryOperatorPrefix :: Parser () -> Parser Types.Value
+binaryOperatorPrefix end = do
   (opr, infx) <- prefixOperator
-  expr1 <- lazyValue
+  expr1 <- lazyValue infx
   infx
-  expr2 <- value
+  expr2 <- lazyValue end
   return Types.VBinaryOperation { Types.vBinArg1 = expr1
                                 , Types.vBinArg2 = expr2
                                 , Types.vBinOpr   = opr
                                 }
+
 
 prefixOperator :: Parser (Types.BinaryOperator, Parser ())
 prefixOperator =
@@ -128,7 +126,7 @@ comparisonOperators = do
 methodCall :: Types.Variable -> Parser Types.Value
 methodCall (Types.Variable idt) = do
   token_ Token.MethodArgs
-  args <- sepBy1 lazyValue $ token_ Token.And
+  args <- sepBy1 (lazyValue $ token_ Token.And) $ token_ Token.And
   return Types.VMethodCall { Types.vMethodName = idt
                            , Types.vMethodArgs = args
                            }
