@@ -49,19 +49,6 @@ genClassByName = do
   name <- genName
   return $ WithText (ClassByName name) name
 
-genPunctuation :: Gen T.Text
-genPunctuation = T.singleton <$> Gen.element ".!?‽…:"
-
--- genTerminator :: Gen Terminator
--- genTerminator = Gen.element [FullStop, Comma, QuestionMark, Exclamation]
-
-isPunctuation :: Char -> Bool
-isPunctuation char = case char of
-                       '.' -> True
-                       ',' -> True
-                       '!' -> True
-                       '?' -> True
-                       _   -> False
 
 genFunction :: Gen (WithText Function)
 genFunction = do
@@ -209,11 +196,18 @@ genAssignment = do
                            , "become"
                            ]
   p0 <- genPunctuation
+  idx <- Gen.choice [ pure $ WithText Nothing ""
+                    , index
+                    ]
   return $ WithText
     Assignment { assignmentName = s var
+               , assignmentIndex = s idx
                , assignmentExpr = s val
                }
-    (T.concat [ p var, " ", statement, " ", p val, p0])
+    (T.concat [ p var, p idx, " ", statement, " ", p val, p0])
+  where index = do
+          i <- Gen.int $ Range.linear 0 100
+          return $ WithText (Just i) (" " `T.append` tShow i)
 
 genScalarType :: Gen (WithText Type)
 genScalarType = do
@@ -312,7 +306,7 @@ genArrayDeclarationNumbered = do
       s3 <- genSpace
       verb <- genDeclarationVerb
       rest <- genDec var (i+1) vals
-      return $ T.concat [ p var, s0, T.pack $ show i
+      return $ T.concat [ p var, s0, tShow i
                         , s1, verb, s2, p val, p0, s3
                         , rest]
 
@@ -529,7 +523,7 @@ genArrayLookup = do
   var <- genVariable
   int <- Gen.integral (Range.linear 0 100)
   s0 <- genSpace
-  let text = T.concat [p var, s0, T.pack . show $ int]
+  let text = T.concat [p var, s0, tShow int]
   let aLookup = VArrayLookup { vaVariable = s var
                             , vaIndex    = int
                             }
@@ -768,9 +762,30 @@ isValidVariable t
 invalidVariableHeadChars :: [Char]
 invalidVariableHeadChars = "\"‘“'-"
 
+
+-----------
+-- Utils --
+-----------
+tShow :: Show a => a -> T.Text
+tShow = T.pack . show
+
 genSpace :: Gen T.Text
 genSpace = Gen.element [ " "
                        , "\n"
                        , "\t"
                        , "\r\n"
                        ]
+
+genPunctuation :: Gen T.Text
+genPunctuation = T.singleton <$> Gen.element ".!?‽…:"
+
+-- genTerminator :: Gen Terminator
+-- genTerminator = Gen.element [FullStop, Comma, QuestionMark, Exclamation]
+
+isPunctuation :: Char -> Bool
+isPunctuation char = case char of
+                       '.' -> True
+                       ',' -> True
+                       '!' -> True
+                       '?' -> True
+                       _   -> False

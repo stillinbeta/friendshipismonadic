@@ -528,21 +528,50 @@ main = hspec $ do
                                       |]
         Fim.run program "" `shouldError`
           "<Sugercube Corner's Prices> is an array of numbers, but element 2 is a string"
-      it "should lookup array by index" $ do
-        let program = wrapMethod [text|Did you know that The diarchs has the names "Celestia" and "Luna"?
-                                       I said The diarchs 1!
-                                      |]
-        Fim.run program "" `shouldOutput` "Celestia\n"
-      it "should throw an error when looking up an invalid index" $ do
-        let program = wrapMethod [text|Did you know that The diarchs has the names "Celestia" and "Luna"?
-                                       I said The diarchs 3!
-                                      |]
-        Fim.run program "" `shouldError` "There is no element 3 of array <The diarchs>"
-      it "should throw an error when indexing an invalid type" $ do
-        let program = wrapMethod [text|Did you know that Applejack's age is the number 17?
-                                       I said Applejack's age 2!
-                                      |]
-        Fim.run program "" `shouldError` "Cannot index <Applejack's age> of type number"
+      describe "indexing" $ do
+        it "should lookup array by index" $ do
+          let program = wrapMethod
+                [text|Did you know that The diarchs has the names "Celestia" and "Luna"?
+                     I said The diarchs 1!
+                     |]
+          Fim.run program "" `shouldOutput` "Celestia\n"
+        it "should throw an error when looking up an invalid index" $ do
+          let program = wrapMethod
+                [text|Did you know that The diarchs has the names "Celestia" and "Luna"?
+                     I said The diarchs 3!
+                     |]
+          Fim.run program "" `shouldError` "There is no element 3 of array <The diarchs>"
+        it "should throw an error when indexing an invalid type" $ do
+          let program = wrapMethod [text|Did you know that Applejack's age is the number 17?
+                                        I said Applejack's age 2!
+                                        |]
+          Fim.run program "" `shouldError` "Cannot index <Applejack's age> of type number"
+      describe "assignment" $ do
+        it "should update arrays in place" $ do
+          let program = wrapMethod
+                [text|Did you know that Twilight's Heroes is the names "Celestia" and "Starswirl"?
+                     Twilight's Heroes 2 is now "her friends".
+                     I sang Twilight's Heroes!
+                     |]
+          Fim.run program "" `shouldOutput` "Celestia and her friends\n"
+        it "should throw an error on updating beyond bounds" $ do
+          let program = wrapMethod
+                [text|Did you know that The Crusaders is many names?
+                     The Crusaders 1 is "Scootaloo".
+                     The Crusaders 2 is "Sweetie Belle".
+                     The Crusaders 3 is "Apple Bloom".
+                     The Crusaders 4 is now "Babs Seed".
+                     |]
+          Fim.run program "" `shouldError` "There is no element 4 of array <The Crusaders>"
+        it "should prevent array assignments of wrong type" $ do
+          let program = wrapMethod
+                [text|Did you know that Sunburst's favourite constants is the
+                     numbers 3.14159 and 2.71828?
+                     Sunburst's favourite constants 1 is now "you dork".
+                     |]
+          Fim.run program "" `shouldError`
+            "Can't assign string to variable <Sunburst's favourite constants> of type number"
+
 
 shouldOutput :: Either T.Text T.Text -> T.Text -> Expectation
 shouldOutput got expected =

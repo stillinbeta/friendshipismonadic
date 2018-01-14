@@ -17,5 +17,8 @@ However, in some cases the spec as written was ambiguous, impossible to implemen
   precedence over variables), but do not overwrite them
 * To disambiguate arrays, numbers are not allowed at the _end_ of variable
   names.
+* The spec does not list syntax for assigning to individual array elements. I
+  have decided on the syntax `<variable> <number> is now <value>` following from
+  the existing assignment syntax.
 
 [spec]: https://docs.google.com/document/d/1gU-ZROmZu0Xitw_pfC1ktCDvJH5rM85TxxQf5pg_xmg/edit?pli=1#

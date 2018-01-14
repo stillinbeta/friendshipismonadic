@@ -6,7 +6,7 @@ module Language.Fim.Parser.Statement ( statement
 import qualified Language.Fim.Types as Types
 -- import Language.Fim.Parser.Tokens (terminator)
 import Language.Fim.Parser.Value (value, lazyValue, variable, methodCall)
-import Language.Fim.Parser.Util (Parser, token_, tokenChoice_)
+import Language.Fim.Parser.Util (Parser, token, token_, tokenChoice_)
 import Language.Fim.Parser.Tokens (terminator)
 import Language.Fim.Parser.Literal (literal)
 import qualified Language.Fim.Lexer.Token as Token
@@ -173,11 +173,13 @@ declarationArray var = arrayList <|> arrayNumbered
 assignment :: Parser Types.Statement
 assignment = do
   var <- variable <?> "variable"
+  index <- optionMaybe $ Token.intLiteral <$> token Token.tIntLiteral
   assignmentVerb
   val <- value
   terminator
-  return Types.Assignment { Types.assignmentName = var
-                          , Types.assignmentExpr = val
+  return Types.Assignment { Types.assignmentName  = var
+                          , Types.assignmentIndex = index
+                          , Types.assignmentExpr  = val
                           }
 
 assignmentVerb :: Parser ()

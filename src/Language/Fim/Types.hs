@@ -56,6 +56,7 @@ data Statement = Output { outputValue :: Value
                                   , aDecType :: Type
                                   }
                | Assignment { assignmentName :: Variable
+                            , assignmentIndex :: Maybe Int
                             , assignmentExpr :: Value
                             }
                | IfThenElse { ifOnVal :: Value

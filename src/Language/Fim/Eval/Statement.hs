@@ -104,12 +104,35 @@ evalStatement a@Assignment{} = do
   let aVarName = vName aVar
   mvar <- gets $ Map.lookup aVarName . variables
   case mvar of
+    -- No variable found
     Nothing -> throwError $ Errors.undefinedVariable aVar
+    -- Variable already defined
     Just var -> do
       when (vboxIsConstant var) $ throwError (Errors.assignToConstant aVar)
       box <- evalValue $ assignmentExpr a
-      checkType box (vboxType var) aVarName
-      setVariable aVar box
+      case assignmentIndex a of
+        -- Not an index assignment
+        Nothing -> do
+          checkType box (vboxType var) aVarName
+          setVariable aVar box
+        -- Assigning to an index
+        Just idx ->
+          -- Language is 1-indexed
+          let idx' = idx - 1 in
+          case vboxValue var of
+            -- Variable is an array
+            aBox@ArrayBox{} -> do
+              let TArray innerTyp = arrType aBox
+              checkType box (Just innerTyp) aVarName
+              let arr = arrVals aBox
+              -- make sure extents are correct
+              unless (idx' >= 0 && idx' < length arr) $
+                throwError $ Errors.invalidIndex aVar idx
+              -- stitch the array back together with the new element
+              let arr' = take idx' arr ++ [box] ++ drop (idx' + 1) arr
+              setVariable aVar (aBox {arrVals = arr'})
+            -- Trying to index a non-array
+            vbox -> throwError $ Errors.cantIndex aVar vbox
   noReturn
 evalStatement i@IfThenElse{} = do
   box <- evalValue $ ifOnVal i
@@ -134,7 +157,6 @@ evalStatement s@Switch{} = do
             EQ -> return $ Just case_
             _ -> findCase box1 cases
         findCase _ [] = pure Nothing
-
 
 evalStatement w@While{} = do
   box <- evalValue $ whileVal w
@@ -341,8 +363,9 @@ w1 <||> w2 = do
 
 makeIncrDecr :: Variable -> BinaryOperator -> Statement
 makeIncrDecr var op =
-  Assignment { assignmentName = var
-             , assignmentExpr =
+  Assignment { assignmentName  = var
+             , assignmentIndex = Nothing
+             , assignmentExpr  =
                VBinaryOperation { vBinArg1 = VVariable var
                                 , vBinOpr = op
                                 , vBinArg2 = VLiteral (NumberLiteral 1)
