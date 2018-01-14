@@ -4,6 +4,7 @@ module Language.Fim.Lexer.Token ( Token(..)
                                 , tStringLiteral
                                 , tCharLiteral
                                 , tNumberLiteral
+                                , tIntLiteral
                                 ) where
 
 import qualified Data.Text as T
@@ -19,11 +20,12 @@ data Token = ClassStart
            | Call
            | Return
            -- Identifier
-           | Identifier T.Text
+           | Identifier {identifier :: T.Text}
            -- Literals
-           | StringLiteral T.Text
-           | CharLiteral Char
-           | NumberLiteral Double
+           | StringLiteral {stringLiteral :: T.Text}
+           | CharLiteral {charLiteral :: Char}
+           | IntLiteral {intLiteral :: Int}
+           | NumberLiteral {numberLiteral :: Double}
            | NullLiteral
            | TrueLiteral
            | FalseLiteral
@@ -108,10 +110,11 @@ data Token = ClassStart
 -- Only match on types, not wrapped value
 teq :: Token -> Token -> Bool
 teq t1 t2 = case (t1, t2) of
-  (Identifier{}, Identifier{}) ->       True
+  (Identifier{}, Identifier{})       -> True
   (StringLiteral{}, StringLiteral{}) -> True
-  (CharLiteral{}, CharLiteral{}) ->     True
+  (CharLiteral{}, CharLiteral{})     -> True
   (NumberLiteral{}, NumberLiteral{}) -> True
+  (IntLiteral{}, IntLiteral{})       -> True
   (_, _) -> t1 == t2
 
 -- TODO kinda hacky - for matching on with teq
@@ -123,6 +126,9 @@ tStringLiteral = StringLiteral T.empty
 
 tNumberLiteral :: Token
 tNumberLiteral = NumberLiteral 0
+
+tIntLiteral :: Token
+tIntLiteral = IntLiteral 0
 
 tCharLiteral :: Token
 tCharLiteral = CharLiteral '\0'

@@ -62,9 +62,9 @@ shallowValue =  choice [ Types.VLiteral  <$> literal  <?> "literal"
                        ]
   where varWithIndex = do
           var <- variable
-          maybeIndex <- optionMaybe (token Token.tNumberLiteral)
+          maybeIndex <- optionMaybe (Token.intLiteral <$> token Token.tIntLiteral)
           return $ case maybeIndex of
-            (Just (Token.NumberLiteral n)) -> Types.VArrayLookup var (round n)
+            (Just n) -> Types.VArrayLookup var n
             _ -> Types.VVariable var
 
 binaryOperatorInfix :: Parser () -> Types.Value -> Parser Types.Value

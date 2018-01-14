@@ -147,7 +147,7 @@ declarationArray var = arrayList <|> arrayNumbered
       -- TODO: the interpreter should probably handle making sure the sequence
       -- is ascending but right now this information isn't retained into the
       -- evaluation phase
-      token_ $ Token.NumberLiteral i
+      token_ $ Token.IntLiteral i
       variableVerb
       val <- value
       terminator

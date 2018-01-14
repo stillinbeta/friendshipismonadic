@@ -141,7 +141,7 @@ lexToken' = choice
   , rstring R_For_every $> Token.ForStart
   , rstring R_to $> Token.To
 
-  , Token.NumberLiteral <$> numberLiteral
+  , numberLiteral
   , Token.CharLiteral   <$> charLiteral
   , Token.StringLiteral <$> stringLiteral
   , rstring R_nothing $> Token.NullLiteral
@@ -251,21 +251,21 @@ lexToken' = choice
   , Token.Identifier <$> identifier1
   ]
 
-numberLiteral :: Parser Double
+numberLiteral :: Parser Token.Token
 numberLiteral = do
-  -- EXTENSION: Fim++ doesn't have negative numbers
-  -- wrap the char in a singleton array to align types for catMaybe
-  sign <- optionMaybe ((:[]) <$> char '-')
   integral <- many1 digit
   -- try because `.` could be either a decimal or a FullStop terminator
   fractional <- optionMaybe . try $ do
     dot <- char '.'
     digits <- many1 digit
     return $ dot:digits
-  let numAsString = concat $ catMaybes [ sign, Just integral, fractional]
-  case reads numAsString of
-    [(num, "")] -> return num
-    _ -> fail $ "failed to read " ++ numAsString
+  case fractional of
+    Just dec -> Token.NumberLiteral <$> readOrFail (integral ++ dec)
+    Nothing ->  Token.IntLiteral    <$> readOrFail integral
+  where
+    readOrFail str = case reads str of
+                  [(num, "")] -> return num
+                  _ -> fail $ "failed to read " ++ str
 
 -- Should this be simpler?
 charLiteral :: Parser Char

@@ -624,7 +624,7 @@ genPrefixVerbConj =
                 )
               ]
 
-genUnaryOperator :: (WithText Value) -> Gen (WithText Value)
+genUnaryOperator :: WithText Value -> Gen (WithText Value)
 genUnaryOperator val = do
   (opr, genPrefix) <- Gen.element [ (Not, Gen.element [ "not"
                                                       , "it's not the case that"
@@ -697,11 +697,11 @@ genDoubleQuote = Gen.element [('"', '"'), ('“', '”')]
 
 genNumberLiteral :: Gen (WithText Literal)
 genNumberLiteral = do
-  num <- Gen.double (Range.linearFrac (-1000000) 1000000)
+  num <- Gen.double (Range.linearFrac 0 1000000)
   return $ WithText
     NumberLiteral {nlValue = num}
     -- printf to avoid exponent
-    (T.pack $ printf "%-.9G" num)
+    (T.pack $ printf "%.9G" num)
 
 genCharacterLiteral :: Gen (WithText Literal)
 genCharacterLiteral = do

@@ -8,7 +8,7 @@ import qualified Language.Fim.Lexer.Token as Token
 import Language.Fim.Parser.Util (Parser, token, token_)
 
 import Data.Functor (($>))
-import Text.Parsec ((<?>))
+import Text.Parsec ((<?>), (<|>))
 import Text.Parsec.Combinator (choice)
 
 literal :: Parser Types.Literal
@@ -20,19 +20,25 @@ literal = choice [ charLiteral    <?> "character literal"
                  ]
 
 numberLiteral :: Parser Types.Literal
-numberLiteral = do
-  Token.NumberLiteral n <- token Token.tNumberLiteral
-  return $ Types.NumberLiteral n
+numberLiteral = numberLit <|> intLit
+  where
+    numberLit =
+      Types.NumberLiteral
+      . Token.numberLiteral
+      <$> token Token.tNumberLiteral
+    intLit =
+      Types.NumberLiteral
+      . fromIntegral
+      . Token.intLiteral
+      <$> token Token.tIntLiteral
 
 stringLiteral :: Parser Types.Literal
-stringLiteral = do
-  Token.StringLiteral t <- token Token.tStringLiteral
-  return $ Types.StringLiteral t
+stringLiteral =
+  Types.StringLiteral . Token.stringLiteral <$> token Token.tStringLiteral
 
 charLiteral :: Parser Types.Literal
-charLiteral = do
-  Token.CharLiteral c <- token Token.tCharLiteral
-  return $ Types.CharacterLiteral c
+charLiteral =
+  Types.CharacterLiteral . Token.charLiteral <$> token Token.tCharLiteral
 
 booleanLiteral :: Parser Types.Literal
 booleanLiteral = choice [ token_ Token.TrueLiteral  $> Types.BooleanLiteral True
