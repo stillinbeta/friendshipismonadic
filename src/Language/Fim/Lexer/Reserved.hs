@@ -10,6 +10,6 @@ import Language.Fim.Lexer.Reserved.List (reservedWordList)
 
 punctuationChars :: String
 -- don't add ' and ‘, they confuse the parser around possesives.
-punctuationChars = ".!?‽…:\"“"
+punctuationChars = ",.!?‽…:\"“"
 
 $(reservedWords reservedWordList)

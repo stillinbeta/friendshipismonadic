@@ -20,5 +20,7 @@ However, in some cases the spec as written was ambiguous, impossible to implemen
 * The spec does not list syntax for assigning to individual array elements. I
   have decided on the syntax `<variable> <number> is now <value>` following from
   the existing assignment syntax.
+* The spec does not include commas as valid punctuation, but several example programs use
+  them, so I consider them valid punctuation for the purposes of ending a sentence.
 
 [spec]: https://docs.google.com/document/d/1gU-ZROmZu0Xitw_pfC1ktCDvJH5rM85TxxQf5pg_xmg/edit?pli=1#

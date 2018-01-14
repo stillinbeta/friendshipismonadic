@@ -21,6 +21,7 @@ terminator = choice [ token_ Token.FullStop
                     , token_ Token.Interrobang
                     , token_ Token.Ellipsis
                     , token_ Token.Colon
+                    , token_ Token.Comma
                     ]
 
 reservedWordList :: [String]

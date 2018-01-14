@@ -777,7 +777,7 @@ genSpace = Gen.element [ " "
                        ]
 
 genPunctuation :: Gen T.Text
-genPunctuation = T.singleton <$> Gen.element ".!?‽…:"
+genPunctuation = T.singleton <$> Gen.element ".!?‽…:,"
 
 -- genTerminator :: Gen Terminator
 -- genTerminator = Gen.element [FullStop, Comma, QuestionMark, Exclamation]

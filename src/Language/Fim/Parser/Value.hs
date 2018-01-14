@@ -13,7 +13,7 @@ import Text.Parsec.Combinator (choice, sepBy1, optionMaybe, lookAhead)
 import Text.Parsec ((<?>), (<|>), try)
 
 value :: Parser Types.Value
-value = lazyValue (fail "identity")
+value = lazyValue (fail "")
 
 lazyValue :: Parser () -> Parser Types.Value
 lazyValue end = choice [ shallowPrefix end
@@ -108,7 +108,7 @@ infixOperator = choice [ token_ Token.And           $> Types.And
                        , token_ Token.MultiplyInfix $> Types.Multiply
                        , token_ Token.DivideInfix   $> Types.Divide
                        , token_ Token.Or            $> Types.Or
-                       , comparisonOperators
+                       , comparisonOperators <?> "comparison"
                        ]
 
 comparisonOperators :: Parser Types.BinaryOperator

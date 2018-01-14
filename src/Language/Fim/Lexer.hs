@@ -111,7 +111,7 @@ lexToken' = choice
   , choice [ R_If />> (" all")
            , rstring R_When
            ] $> Token.If
-  , astring "then" $> Token.Then
+  , rstring R_then $> Token.Then
   , rchoice [ R_Otherwise
             , R_Or_else
             ] $> Token.Else
