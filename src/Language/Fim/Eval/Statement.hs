@@ -120,6 +120,22 @@ evalStatement i@IfThenElse{} = do
   -- TODO should if/then/else be scoped?
   evalStatements stmts
 
+evalStatement s@Switch{} = do
+  box <- evalValue $ switchOnVal s
+  case_ <- findCase box (switchCases s)
+  let body = case case_ of
+        Just c -> caseBody c
+        Nothing -> switchDefault s
+  evalStatements body
+  where findCase box1 (case_:cases) = do
+          let box2 = boxLiteral $ caseLit case_
+          ord <- compareBox box1 box2
+          case ord of
+            EQ -> return $ Just case_
+            _ -> findCase box1 cases
+        findCase _ [] = pure Nothing
+
+
 evalStatement w@While{} = do
   box <- evalValue $ whileVal w
   branch <- boolOrError box

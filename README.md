@@ -42,11 +42,11 @@ stack test
 * String concatenation
 * Creating arrays
 * Reading elements from arrays
+* Switches
 
 ### What doesn't work
 
 * Writing to arrays
-* Switches
 
 ### What I'm not going bother with
 * *Interfaces* (what does this even mean in a language without objects?)

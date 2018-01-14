@@ -234,26 +234,65 @@ main = hspec $ do
                                          |]
           Fim.run program "" `shouldOutput` "I am not tardy!\nEverything is fine!\n"
     describe "conditional logic" $ do
-      it "should error on non-booleans" $ do
-        let program = wrapMethod [text|When "Chimicherrychanga":
-                                            I sang "Pinkie Pie!"!
-                                            That's what I would do.
-                                           |]
-        Fim.run program "" `shouldError` "Expected string to be of type argument"
-      it "should branch" $ do
-        let program = wrapMethod [text|When 18 isn't less than 10:
-                                            I said "I'm pancake"!
-                                            That's what I would do.
-                                           |]
-        Fim.run program "" `shouldOutput` "I'm pancake\n"
-      it "should support else" $ do
-        let program = wrapMethod [text|When not true:
-                                            I said "I'm pancake"!
-                                            Otherwise:
-                                            I said "I mean... Awake".
-                                            That's what I would do.
-                                           |]
-        Fim.run program "" `shouldOutput` "I mean... Awake\n"
+      describe "if statements" $ do
+        it "should error on non-booleans" $ do
+          let program = wrapMethod [text|When "Chimicherrychanga":
+                                              I sang "Pinkie Pie!"!
+                                              That's what I would do.
+                                            |]
+          Fim.run program "" `shouldError` "Expected string to be of type argument"
+        it "should branch" $ do
+          let program = wrapMethod [text|When 18 isn't less than 10:
+                                              I said "I'm pancake"!
+                                              That's what I would do.
+                                            |]
+          Fim.run program "" `shouldOutput` "I'm pancake\n"
+        it "should support else" $ do
+          let program = wrapMethod [text|When not true:
+                                              I said "I'm pancake"!
+                                              Otherwise:
+                                              I said "I mean... Awake".
+                                              That's what I would do.
+                                            |]
+          Fim.run program "" `shouldOutput` "I mean... Awake\n"
+      describe "switch statements"  $ do
+        it "should switch on numbers" $ do
+          let program = wrapMethod [text|In regards to 1 plus 2:
+                                         On the 1st hoof:
+                                         I said "One"!
+                                         On the 2nd hoof:
+                                         I said "Two"!
+                                         On the 3rd hoof:
+                                         I said "Three"!
+                                         On the 4th hoof:
+                                         I said "Four"!
+                                         That's what I did.
+                                        |]
+          Fim.run program "" `shouldOutput` "Three\n"
+        it "should do string comparison" $ do
+          let program = wrapMethod [text|In regards to yes:
+                                        On the "true" hoof:
+                                        I said "That's an aye"!
+                                        On the "false" hoof:
+                                        I said "That's a neigh"!
+                                        That's what I did.
+                                        |]
+          Fim.run program "" `shouldOutput` "That's an aye\n"
+        it "should evaluate defaults" $ do
+          let program = wrapMethod [text|In regards to "Twilight Sparkle":
+                                         On the "Fluttershy" hoof:
+                                         I said "Hi Fluttershy"!
+                                         On the "Rarity" hoof:
+                                         I said "Hiya Rarity"!
+                                         On the "Applejack" hoof:
+                                         I said "Howdy Applejack"!
+                                         On the "Rainbow Dash" hoof:
+                                         I said "Hey Dashie"!
+                                         If all else fails:
+                                         I sang "Time to throw a party"!
+                                         That's what I did.
+                                        |]
+          Fim.run program "" `shouldOutput` "Time to throw a party\n"
     describe "loops" $ do
       it "should run through loops" $ do
         let program = wrapMethod [text|Did you know that my book count is the number 3?
