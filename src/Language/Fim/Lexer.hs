@@ -108,14 +108,25 @@ lexToken' = choice
   , rstring R_the_next $> Token.InputType
 
   -- If then else
-  , rchoice [ R_If
-            , R_When
-            ] $> Token.If
+  , choice [ R_If />> (" all")
+           , rstring R_When
+           ] $> Token.If
   , astring "then" $> Token.Then
   , rchoice [ R_Otherwise
             , R_Or_else
             ] $> Token.Else
   , rstring R_Thats_what_I_would_do $> Token.Fi
+
+  -- Switch
+  , rstring R_In_regards_to $> Token.SwitchStart
+  , rstring R_On_the $> Token.SwitchCasePrefix
+  , choice [ astring "st"
+           , astring "nd"
+           , astring "rd"
+           , astring "th"
+           ] $> Token.SwitchCaseInfix
+  , astring "hoof" $> Token.SwitchCaseSuffix
+  , rstring R_If_all_else_fails $> Token.SwitchDefault
 
   -- While loops
   , rchoice [ R_Heres_what_I_did_while

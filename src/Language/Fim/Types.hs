@@ -7,6 +7,7 @@ module Language.Fim.Types ( Class(..)
                           , UnaryOperator(..)
                           , Literal(..)
                           , StringQuote(..)
+                          , Case(..)
                           , Identifier
                           , Variable(..)
                           , Type(..)
@@ -61,6 +62,10 @@ data Statement = Output { outputValue :: Value
                             , ifThen :: [Statement]
                             , ifElse :: [Statement]
                             }
+               | Switch { switchOnVal :: Value
+                        , switchCases :: [Case]
+                        , switchDefault :: [Statement]
+                        }
                | While { whileVal :: Value
                        , whileBody :: [Statement]
                        }
@@ -126,6 +131,7 @@ data Literal = StringLiteral    { slValue :: T.Text }
 
              deriving Show
 
+
 -- Manually define Eq so our tests don't barf on the doubles
 instance Eq Literal where
   (StringLiteral val1)    == (StringLiteral val2)    = val1 == val2
@@ -135,6 +141,10 @@ instance Eq Literal where
   NullLiteral             == NullLiteral             = True
   _ == _ = False
 
+
+data Case = Case { caseLit :: Literal
+                 , caseBody :: [Statement]
+                 } deriving (Eq, Show)
 
 data StringQuote = SimpleQuote | FancyQuote deriving (Eq, Show)
 

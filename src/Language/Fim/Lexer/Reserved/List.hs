@@ -98,6 +98,10 @@ reservedWordList = [ "Dear"
                    , "That's what I would do"
                    , "Otherwise"
                    , "Or else"
+                   -- Switch
+                   , "In regards to"
+                   , "On the"
+                   , "If all else fails"
                    -- Loops
                    , "Here's what I did while"
                    , "Here's what I did"

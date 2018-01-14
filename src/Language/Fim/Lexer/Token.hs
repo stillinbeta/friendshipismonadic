@@ -89,6 +89,12 @@ data Token = ClassStart
            | Then
            | Else
            | Fi
+           -- Switch
+           | SwitchStart
+           | SwitchCasePrefix
+           | SwitchCaseInfix
+           | SwitchCaseSuffix
+           | SwitchDefault
            -- While loops
            | WhileStart
            | DoWhileStart

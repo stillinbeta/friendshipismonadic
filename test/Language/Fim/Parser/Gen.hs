@@ -128,6 +128,7 @@ genStatement = Gen.recursive
   , genWhile
   , genDoWhile
   , genFor
+  , genSwitch
   ]
 
 genOutput :: Gen (WithText Statement)
@@ -358,6 +359,56 @@ genIfThenElse = do
   return $ WithText ife text
   where
     sConcat = T.concat . map p
+
+genSwitch :: Gen (WithText Statement)
+genSwitch = do
+  val <- genValue
+  p0 <- genPunctuation
+  p1 <- genPunctuation
+  s0 <- genSpace
+  s1 <- genSpace
+  allElse <- Gen.choice [ pure (WithText [] "")
+                        , default_
+                        ]
+  cases <- Gen.list (Range.linear 0 10) genCase
+  let text = T.concat ["In regards to ", p val, p0, s0
+                      , T.intercalate s1 (p <$> cases)
+                      , p allElse
+                      , "That's what I did", p1
+                      ]
+  let switch = Switch { switchOnVal = s val
+                      , switchCases = s <$> cases
+                      , switchDefault = s allElse
+                      }
+  return $ WithText switch text
+  where default_ = do
+          stmts <- genStatements
+          p0 <- genPunctuation
+          s0 <- genSpace
+          return $ WithText (s <$> stmts) $
+            T.concat ["If all else fails", p0
+            , T.intercalate s0 (p <$> stmts)
+            ]
+
+genCase :: Gen (WithText Case)
+genCase = do
+  lit <- genLiteral
+  s0 <- genSpace
+  s1 <- genSpace
+  p0 <- genPunctuation
+  stmts <- genStatements
+  suffix <- case s lit of
+    -- "yesnd", "nost" don't make sense
+    BooleanLiteral{} -> pure ""
+    NullLiteral{} -> pure ""
+    _ -> Gen.element ["", "st", "nd", "rd", "th"]
+  let text = T.concat ["On the ", p lit, suffix, s0, "hoof", p0
+                      , T.intercalate s1 (p <$> stmts)
+                      ]
+  let case_ = Case { caseLit = s lit
+                   , caseBody = s <$> stmts
+                   }
+  return $ WithText case_ text
 
 genWhile :: Gen (WithText Statement)
 genWhile = do

@@ -26,6 +26,7 @@ statement = choice [ io
                    , declaration
                    , try assignment -- incrDecr also starts with a variable
                    , ifThenElse
+                   , switch
                    , while
                    , doWhile
                    , for
@@ -203,6 +204,35 @@ ifThenElse = do
                           , Types.ifThen = then_
                           , Types.ifElse = fromMaybe [] else_
                           }
+
+-- Switch
+switch :: Parser Types.Statement
+switch = do
+  token_ Token.SwitchStart
+  val <- value
+  terminator
+  cases <- many case_
+  def <- default_ <|> pure []
+  token_ Token.WhileEnd
+  terminator
+  return Types.Switch { Types.switchOnVal = val
+                      , Types.switchCases = cases
+                      , Types.switchDefault = def
+                      }
+  where case_ = do
+          token_ Token.SwitchCasePrefix
+          lit <- literal
+          optional $ token_ Token.SwitchCaseInfix
+          token_ Token.SwitchCaseSuffix
+          terminator
+          stmts <- statements
+          return Types.Case { Types.caseLit  = lit
+                            , Types.caseBody = stmts
+                            }
+        default_ = do
+          token_ Token.SwitchDefault
+          terminator
+          statements
 
 -- loops
 while :: Parser Types.Statement
