@@ -22,9 +22,10 @@ That's all about buzz!
 
 
 Today I learned FizzBuzz!
-  Did you know that fizz here is an argument?
+  Did you know that fizz here is an argument? (argument is another word for boolean)
   Did you know that buzz here is an argument?
   For every number i from 1 to 20:
+    (we use intermediate variables because there's no associativity)
     fizz here is now fizz using i!
     buzz here is now buzz using i!
     If fizz here and buzz here:
