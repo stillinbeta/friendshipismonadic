@@ -45,6 +45,9 @@ stack test
 * Writing to arrays
 * Switches
 
+### What needs work
+* The error messages are... not good, especially for parsing/lexing
+
 ### What I'm not going bother with
 * *Interfaces* (what does this even mean in a language without objects?)
 * *Inheritence* (Not much point without libraries)
