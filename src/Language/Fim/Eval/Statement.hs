@@ -73,24 +73,32 @@ evalStatement p@Prompt{} = do
                       }
   noReturn
 evalStatement d@Declaration{} = do
-  box <- maybe (pure NullBox) evalValue (declareVal d)
-  declareVariable (declareName d) box (declareIsConstant d) (declareType d)
-  noReturn
-evalStatement d@ArrayDeclaration{} = do
-  let typ' = aDecType d
-  vals <- mapM getValue $ zip [1..] (aDecVals d)
-  let arr = ArrayBox { arrType = typ'
-                     , arrVals = vals
-                     }
-  declareVariable (aDecName d) arr False (Just typ')
+  let typ' = declareType d
+  vals <- mapM evalValue $ declareVals d
+  -- if there's more than one value, definitely an array
+  -- if there's only one value but the type is array, it's a singleton
+  box <- if length vals > 1 || isArrayType
+    then do
+      mapM_ checkArrayType $ zip [1..] vals
+      return ArrayBox { arrType = typ'
+                      , arrVals = vals
+                      }
+    else return $ case vals of
+                    [] -> NullBox
+                    -- should always be singleton, but x just to be safe
+                    (x:_) -> x
+  declareVariable (declareName d) box (declareIsConstant d) typ'
   noReturn
   where
-    getValue (i, val) = do
-      let TArray innerTyp = aDecType d
-      box <- evalValue val
-      if typeMatch box innerTyp
-      then return box
-      else throwError $ Errors.arrayTypeError (aDecName d) innerTyp i box
+    isArrayType = case declareType d of
+      Just (TArray _) -> True
+      _ -> False
+    checkArrayType (i, box) =
+      case declareType d of
+        Just (TArray innerType) ->
+          unless (typeMatch box innerType) $
+            throwError $ Errors.arrayTypeError (declareName d) innerType i box
+        _ -> pure ()
 evalStatement c@Call{} =
   Nothing <$ evalValue (callVal c)
 evalStatement r@Return{} =
@@ -122,8 +130,10 @@ evalStatement a@Assignment{} = do
           case vboxValue var of
             -- Variable is an array
             aBox@ArrayBox{} -> do
-              let TArray innerTyp = arrType aBox
-              checkType box (Just innerTyp) aVarName
+              let innerType = case arrType aBox of
+                    Just (TArray innerTyp) -> Just innerTyp
+                    _ -> Nothing
+              checkType box innerType aVarName
               let arr = arrVals aBox
               -- make sure extents are correct
               unless (idx' >= 0 && idx' < length arr) $
@@ -162,10 +172,12 @@ evalStatement w@While{} = do
   box <- evalValue $ whileVal w
   branch <- boolOrError box
   if branch
+    -- recurse only if there's no return value
     then evalStatements (whileBody w) <||> evalStatement w
     else noReturn
 
 evalStatement w@DoWhile{} =
+  -- recurse only if there's no return value
   evalStatements (doWhileBody w) <||> do
       box <- evalValue $ doWhileVal w
       branch <- boolOrError box
@@ -180,7 +192,7 @@ evalStatement f@For{} = do
   let typ = forType f
   vals <- boxRange from to
   void $ evalStatement Declaration { declareName = var
-                                   , declareVal = Nothing
+                                   , declareVals = []
                                    , declareIsConstant = False
                                    , declareType = Just typ
                                    }
@@ -309,6 +321,7 @@ evalConcat con = case con of
   where toText lit = case lit of
                        (CharacterLiteral c) -> T.singleton c
                        (StringLiteral t) -> t
+                       -- if we get this error, the AST is invalid, so bail
                        _ -> error $ "got unexpected literal" ++ show lit
 
 

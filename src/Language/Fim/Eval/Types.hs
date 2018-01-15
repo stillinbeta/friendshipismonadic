@@ -32,7 +32,7 @@ data VariableBox = VariableBox { vboxValue      :: ValueBox
                                }
 
 data ValueBox = NumberBox Double
-              | ArrayBox { arrType :: Type
+              | ArrayBox { arrType :: Maybe Type
                          , arrVals :: [ValueBox]
                          }
               | CharacterBox Char
@@ -55,5 +55,5 @@ typeForBox box = case box of
   StringBox{}             -> Just TString
   CharacterBox{}          -> Just TCharacter
   BooleanBox{}            -> Just TBoolean
-  ArrayBox{arrType = typ} -> Just typ
+  ArrayBox{arrType = typ} -> typ
   NullBox{}               -> Nothing

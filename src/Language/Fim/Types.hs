@@ -47,14 +47,10 @@ data Statement = Output { outputValue :: Value
                         , promptVal  :: Value
                         }
                | Declaration { declareName :: Variable
-                             , declareVal :: Maybe Value
+                             , declareVals :: [Value]
                              , declareIsConstant :: Bool
                              , declareType :: Maybe Type
                              }
-               | ArrayDeclaration { aDecName :: Variable
-                                  , aDecVals :: [Value]
-                                  , aDecType :: Type
-                                  }
                | Assignment { assignmentName :: Variable
                             , assignmentIndex :: Maybe Int
                             , assignmentExpr :: Value

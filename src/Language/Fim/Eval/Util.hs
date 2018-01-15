@@ -21,7 +21,7 @@ typeMatch box typ = case (box, typ) of
     (StringBox{},    TString)    -> True
     (CharacterBox{}, TCharacter) -> True
     (BooleanBox{},   TBoolean)   -> True
-    (ArrayBox{arrType = TArray typ1}, TArray typ2) -> typ1 == typ2
+    (ArrayBox{arrType = Just (TArray typ1)}, TArray typ2) -> typ1 == typ2
     _ -> False
 
 checkType :: (Evaluator m) => ValueBox -> Maybe Type -> Identifier -> m ()

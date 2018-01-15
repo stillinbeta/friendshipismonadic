@@ -10,6 +10,7 @@ import Language.Fim.Internal (reservedWordList)
 import Control.Applicative ((<|>))
 import qualified Data.Text as T
 import Data.Char (isDigit)
+import Data.Maybe (maybeToList)
 import Text.Printf (printf)
 
 import Hedgehog
@@ -104,7 +105,7 @@ genStatement = Gen.recursive
   , genInput
   , genPrompt
   , genDeclaration
-  , genArrayDeclaration
+  , genArrayDeclarationNumbered
   , genAssignment
   , genCall
   , genReturn
@@ -148,30 +149,6 @@ genPrompt = do
   s0 <- genSpace
   let text = T.concat ["I asked ", p var, ": ", p val, p0, s0]
   return $ WithText Prompt { promptName = s var, promptVal = s val} text
-
-genDeclaration :: Gen (WithText Statement)
-genDeclaration = do
-  verb <- genDeclarationVerb
-  name <- genVariable
-  isConstant <- Gen.bool
-  (val, typ) <- Gen.choice [ genDeclarationNothingTyped
-                           , genDeclarationLiteralTyped
-                           , genDeclarationVariable
-                           ]
-  return $ WithText
-    Declaration { declareName = s name
-                , declareVal = s val
-                , declareIsConstant = isConstant
-                , declareType = typ
-                }
-    (T.concat [ "Did you know that ", p name, " ", verb,
-               if isConstant then " always " else " ",
-               p val, "?"
-               ]
-    )
-
-genDeclarationVerb :: Gen T.Text
-genDeclarationVerb =  Gen.element ["is", "was", "has", "had", "like","likes", "liked"]
 
 genIncrDecr :: Gen (WithText Statement)
 genIncrDecr = do
@@ -227,52 +204,40 @@ genType = do
   Gen.element [ typ
               , WithText (TArray $ s typ) (p typ `T.append` plural)
               ]
-genDeclarationNothingTyped :: Gen (WithText (Maybe Value), Maybe Type)
-genDeclarationNothingTyped = do
-  typ <- genType
-  return (WithText Nothing (p typ), Just $ s typ)
 
-genDeclarationLiteralTyped :: Gen (WithText (Maybe Value), Maybe Type)
-genDeclarationLiteralTyped = do
-  article <- Gen.element ["", "the ", "a "]
-  (litGen, nounGen, typ) <- Gen.element
-    [ (genNumberLiteral,    genNumberNoun,  TNumber)
-    , (genStringLiteral,    genStringNoun,  TString)
-    , (genCharacterLiteral, genCharNoun,    TCharacter)
-    , (genBooleanLiteral,   genBooleanNoun, TBoolean)
-    ]
-  lit <- litGen <|> genNullLiteral
-  noun <- nounGen
-  let txt = T.concat [article , noun, " ", p lit]
-  return ( WithText (Just VLiteral { vLiteral = s lit}) txt
-         , Just typ)
+genDeclarationVerb :: Gen T.Text
+genDeclarationVerb =  Gen.element ["is", "was", "has", "had", "like","likes", "liked"]
 
-genDeclarationVariable :: Gen (WithText (Maybe Value), Maybe Type)
-genDeclarationVariable = do
-  var <- genVariable
-  return (WithText (Just . VVariable $ s var) (p var), Nothing)
-
-genArrayDeclaration :: Gen (WithText Statement)
-genArrayDeclaration = Gen.choice [genArrayDeclarationNumbered, genArrayDeclarationList]
-
-genArrayDeclarationList :: Gen (WithText Statement)
-genArrayDeclarationList = do
-  plural <- genPlural
+genDeclaration :: Gen (WithText Statement)
+genDeclaration = do
   s0 <- genSpace
   s1 <- genSpace
   s2 <- genSpace
   s3 <- genSpace
   p0 <- genPunctuation
+  isConstant <- Gen.bool
+  let const = if isConstant
+        then WithText True "always "
+        else WithText False ""
   var <- genVariable
   verb <- genDeclarationVerb
-  vals <- Gen.list (Range.linear 1 10) genShallowValue
-  typ <- genScalarType
-  let text = T.concat ["Did you know that", s0, p var, s1, verb, s2, p typ, plural, s3
+  vals <- Gen.list (Range.linear 0 10) genShallowValue
+  typ <- genType
+  let text = T.concat ["Did you know that", s0
+                      -- variable
+                      , p var, s1
+                      -- is/was/etc
+                      , verb, s2
+                      -- always
+                      , p const
+                      -- a number, the letter etc
+                      , p typ, s3
                       , T.intercalate " and " (p <$> vals),  p0]
-  let dec = ArrayDeclaration { aDecName = s var
-                             , aDecType = TArray $ s typ
-                             , aDecVals = s <$> vals
-                             }
+  let dec = Declaration { declareName = s var
+                        , declareType = Just $ s typ
+                        , declareIsConstant = s const
+                        , declareVals = s <$> vals
+                        }
   return $ WithText dec text
 
 genArrayDeclarationNumbered :: Gen (WithText Statement)
@@ -291,10 +256,11 @@ genArrayDeclarationNumbered = do
   let text = T.concat ["Did you know that", s0, p var, s1,
                        verb, s2, "many", s3, p typ, plural, "?",
                        s4, decs]
-  let dec = ArrayDeclaration { aDecName = s var
-                             , aDecType = TArray $ s typ
-                             , aDecVals = s <$> vals
-                             }
+  let dec = Declaration { declareName = s var
+                        , declareType = Just . TArray . s $ typ
+                        , declareIsConstant = False
+                        , declareVals = s <$> vals
+                        }
   return $ WithText dec text
   where
     genDec _ _ [] = pure ""

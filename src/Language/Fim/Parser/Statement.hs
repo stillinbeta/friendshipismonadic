@@ -13,9 +13,9 @@ import qualified Language.Fim.Lexer.Token as Token
 
 import Control.Applicative (many)
 import Data.Functor (($>))
-import Data.Maybe (isJust, fromMaybe)
+import Data.Maybe (isJust, fromMaybe, maybeToList)
 import Text.Parsec ((<?>), (<|>), try)
-import Text.Parsec.Combinator (choice, optionMaybe, optional, sepBy1)
+import Text.Parsec.Combinator (choice, optionMaybe, optional, sepBy)
 
 
 statements :: Parser [Types.Statement]
@@ -88,33 +88,39 @@ declaration = do
   token_ Token.VariableDec
   var <- variable
   variableVerb
-  try (declarationArray var) <|> declarationScalar var
-
-declarationScalar :: Types.Variable -> Parser Types.Statement
-declarationScalar var = do
-  isConstant <- isJust <$> optionMaybe (token_ Token.VariableConstant)
-  (typ, val) <-  choice [ declarationTyped
-                        , declarationVariable
-                        ]
-  terminator
-  return Types.Declaration { Types.declareName = var
-                           , Types.declareVal = val
-                           , Types.declareType = typ
-                           , Types.declareIsConstant = isConstant
-                           }
-
-declarationTyped :: Parser (Maybe Types.Type, Maybe Types.Value)
-declarationTyped = do
-  typ <- declarationType
-  val <- optionMaybe literal
-  return (Just typ, Types.VLiteral <$> val)
-
-declarationVariable :: Parser (Maybe Types.Type, Maybe Types.Value)
-declarationVariable = do
-  var <-  variable
-  -- Try to turn it into a method call if possible
-  val' <- methodCall var <|> pure (Types.VVariable var)
-  return (Nothing, Just val')
+  arrayNumbered var <|> arrayList var
+  where
+    arrayNumbered var = do
+      token_ Token.Many
+      typ <- declarationType
+      terminator
+      vals <- arrayNumberedItem var 1
+      return Types.Declaration { Types.declareName = var
+                               , Types.declareType = Just typ
+                               , Types.declareVals = vals
+                               , Types.declareIsConstant = False
+                               }
+    arrayNumberedItem var i = do
+      token_ $ Token.Identifier (Types.vName var)
+      -- TODO: the interpreter should probably handle making sure the sequence
+      -- is ascending but right now this information isn't retained into the
+      -- evaluation phase
+      token_ $ Token.IntLiteral i
+      variableVerb
+      val <- value
+      terminator
+      next <- optionMaybe $ try (arrayNumberedItem var (i+1))
+      return $ val:fromMaybe [] next
+    arrayList var = do
+      isConstant <- isJust <$> optionMaybe (token_ Token.VariableConstant)
+      typ <- optionMaybe declarationType
+      vals <- sepBy (lazyValue $ token_ Token.And) (token_ Token.And)
+      terminator
+      return Types.Declaration { Types.declareName = var
+                               , Types.declareType = typ
+                               , Types.declareVals = vals
+                               , Types.declareIsConstant = isConstant
+                               }
 
 declarationType :: Parser Types.Type
 declarationType = do
@@ -128,45 +134,6 @@ declarationType = do
   return $ if isPlural
            then Types.TArray typ
            else typ
-
-declarationArray :: Types.Variable -> Parser Types.Statement
-declarationArray var = arrayList <|> arrayNumbered
-  where
-    arrayNumbered = do
-      token_ Token.Many
-      typ <- declarationType
-      assertArrayType typ
-      terminator
-      vals <- arrayNumberedItem 1
-      return Types.ArrayDeclaration { Types.aDecName = var
-                                    , Types.aDecType = typ
-                                    , Types.aDecVals = vals
-                                    }
-    arrayNumberedItem i = do
-      token_ $ Token.Identifier (Types.vName var)
-      -- TODO: the interpreter should probably handle making sure the sequence
-      -- is ascending but right now this information isn't retained into the
-      -- evaluation phase
-      token_ $ Token.IntLiteral i
-      variableVerb
-      val <- value
-      terminator
-      next <- optionMaybe $ try (arrayNumberedItem (i+1))
-      return $ val:fromMaybe [] next
-    arrayList = do
-      typ <- declarationType
-      assertArrayType typ
-      vals <- sepBy1 (lazyValue $ token_ Token.And) (token_ Token.And)
-      terminator
-      return Types.ArrayDeclaration { Types.aDecName = var
-                                    , Types.aDecType = typ
-                                    , Types.aDecVals = vals
-                                    }
-    assertArrayType typ =
-      case typ of
-        Types.TArray {} -> pure ()
-        _ -> fail "Expected array type"
-
 
 -- Assignment --
 
