@@ -188,7 +188,7 @@ genAssignment = do
 
 genScalarType :: Gen (WithText Type)
 genScalarType = do
-  article <- Gen.element ["", "the ", "a "]
+  article <- genArticle
   (gen, typ) <- Gen.choice [ pure (genNumberNoun, TNumber)
                            , pure (genStringNoun, TString)
                            , pure (genCharNoun, TCharacter)
@@ -196,6 +196,9 @@ genScalarType = do
                            ]
   noun <- gen
   return $ WithText typ (T.concat [article, noun])
+
+genArticle :: Gen T.Text
+genArticle = Gen.element ["", "the ", "a "]
 
 genType :: Gen (WithText Type)
 genType = do
@@ -709,13 +712,15 @@ genName = pure (T.pack "Fluttershy")
 
 genIdentifier :: Gen (WithText Identifier)
 genIdentifier = do
+  article <- genArticle
   idt <- Gen.filter isValidVariable genName
-  return $ WithText idt idt
+  let t = article `T.append` idt
+  return $ WithText t t
+
 
 
 genVariable :: Gen (WithText Variable)
 genVariable = wtLift Variable <$> genIdentifier
-
 
 isValidVariable :: T.Text -> Bool
 isValidVariable t

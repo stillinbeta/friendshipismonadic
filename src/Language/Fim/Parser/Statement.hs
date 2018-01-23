@@ -5,15 +5,16 @@ module Language.Fim.Parser.Statement ( statement
 
 import qualified Language.Fim.Types as Types
 -- import Language.Fim.Parser.Tokens (terminator)
-import Language.Fim.Parser.Value (value, lazyValue, variable, methodCall)
+import Language.Fim.Parser.Value (value, lazyValue, variable)
 import Language.Fim.Parser.Util (Parser, token, token_, tokenChoice_)
-import Language.Fim.Parser.Tokens (terminator)
+import Language.Fim.Parser.Tokens (identifier, terminator)
 import Language.Fim.Parser.Literal (literal)
 import qualified Language.Fim.Lexer.Token as Token
 
 import Control.Applicative (many)
+import Control.Monad (unless)
 import Data.Functor (($>))
-import Data.Maybe (isJust, fromMaybe, maybeToList)
+import Data.Maybe (isJust, fromMaybe)
 import Text.Parsec ((<?>), (<|>), try)
 import Text.Parsec.Combinator (choice, optionMaybe, optional, sepBy)
 
@@ -101,7 +102,8 @@ declaration = do
                                , Types.declareIsConstant = False
                                }
     arrayNumberedItem var i = do
-      token_ $ Token.Identifier (Types.vName var)
+      idt <- identifier
+      unless (idt == Types.vName var) $ fail "need matching array declaration variable"
       -- TODO: the interpreter should probably handle making sure the sequence
       -- is ascending but right now this information isn't retained into the
       -- evaluation phase
@@ -124,7 +126,7 @@ declaration = do
 
 declarationType :: Parser Types.Type
 declarationType = do
-  optional $ token_ Token.Article
+  optional $ token_ Token.tArticle
   typ <- choice [ token_ Token.NumberType    $> Types.TNumber
                 , token_ Token.CharacterType $> Types.TCharacter
                 , token_ Token.StringType    $> Types.TString

@@ -7,6 +7,7 @@ import qualified Language.Fim.Types as Types
 import qualified Language.Fim.Lexer.Token as Token
 import Language.Fim.Parser.Util (Parser, token, token_)
 import Language.Fim.Parser.Literal (literal, stringLiteral, charLiteral)
+import Language.Fim.Parser.Tokens (identifier)
 
 import Data.Functor (($>))
 import Text.Parsec.Combinator (choice, sepBy1, optionMaybe, lookAhead)
@@ -47,11 +48,6 @@ unaryOperator end = do
   return Types.VUnaryOperation { Types.vUnArg = val
                                , Types.vUnOpr = opr
                                }
-
-identifier :: Parser Types.Identifier
-identifier = do
-  Token.Identifier n <- token Token.tIdentifier
-  return n
 
 variable :: Parser Types.Variable
 variable = Types.Variable <$> identifier

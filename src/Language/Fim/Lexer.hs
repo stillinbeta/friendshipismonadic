@@ -233,10 +233,11 @@ lexToken' = choice
   , rstring R_by $> Token.By
 
   -- Never used at the start of a phrase
-  , choice [ astring "the"
-           , astring "an"
-           , astring "a"
-           ] $> Token.Article
+  -- Special case here so variables can start with articles
+  , choice [ astring "the" $> Token.Article (T.pack "the")
+           , astring "an"  $> Token.Article (T.pack "an")
+           , astring "a"   $> Token.Article (T.pack "a")
+           ]
 
   , rchoice [ R_yes
             , R_true

@@ -5,6 +5,7 @@ module Language.Fim.Lexer.Token ( Token(..)
                                 , tCharLiteral
                                 , tNumberLiteral
                                 , tIntLiteral
+                                , tArticle
                                 ) where
 
 import qualified Data.Text as T
@@ -39,7 +40,7 @@ data Token = ClassStart
            | Interrobang
            -- Variables
            | VariableDec
-           | Article
+           | Article {article :: T.Text}
            | VariableConstant
            | Plural
            | Many
@@ -110,6 +111,7 @@ data Token = ClassStart
 -- Only match on types, not wrapped value
 teq :: Token -> Token -> Bool
 teq t1 t2 = case (t1, t2) of
+  (Article{}, Article{})             -> True
   (Identifier{}, Identifier{})       -> True
   (StringLiteral{}, StringLiteral{}) -> True
   (CharLiteral{}, CharLiteral{})     -> True
@@ -132,3 +134,6 @@ tIntLiteral = IntLiteral 0
 
 tCharLiteral :: Token
 tCharLiteral = CharLiteral '\0'
+
+tArticle :: Token
+tArticle = Article T.empty

@@ -8,11 +8,18 @@ import qualified Language.Fim.Lexer.Token as Token
 import Language.Fim.Parser.Util (Parser, token_, token)
 
 import Text.Parsec.Combinator (choice)
+import Text.Parsec ((<|>))
 
 identifier :: Parser T.Text
 identifier = do
+  -- Allow an article at the front of an identifier
+  article' <- article <|> pure T.empty
   Token.Identifier name <- token Token.tIdentifier
-  return  name
+  return $ article' `T.append` name
+  where article = do
+          a <- Token.article <$> token Token.tArticle
+          return $ T.snoc a ' '
+
 
 terminator :: Parser ()
 terminator = choice [ token_ Token.FullStop
