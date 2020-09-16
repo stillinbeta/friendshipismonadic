@@ -117,7 +117,7 @@ Statement and Value are mutually recursive, so having them in separate modules
 would result in an import loop.
 
 Because the language is not necessarily static, and to divorce the language from
-Haskell's type system, all values are [boxed][ValueBox]. All methods either
+Haskell's type system, all values are [boxed][box]. All methods either
 explicitly return a boxed value, or implicitly return the null value. This is recorded
 by having all statements be of type Maybe Value. Nothing means there's no return, Just Value
 means execution should halt and pass up to the next level.
